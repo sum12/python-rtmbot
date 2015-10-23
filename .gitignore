@@ -1,6 +1,6 @@
 *.pyc
 /rtmbot.conf
-/plugins/**
 env
 .venv
 *.log
+*.csv
