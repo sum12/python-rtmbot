@@ -10,24 +10,53 @@ import os
 import sys
 import time
 import logging
+from logging.handlers import RotatingFileHandler
+import watchdog
+import importlib
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 from argparse import ArgumentParser
 
 from slackclient import SlackClient
 
-def dbg(debug_string):
-    if debug:
-        logging.info(debug_string)
+logger = logging.getLogger(__name__)
+logger.propagate = False
 
-class RtmBot(object):
+def setup_logger(cfg):
+    if 'LOGFILE' in cfg:
+        file_handler = RotatingFileHandler(cfg['LOGFILE'], 'a', 1 * 1024 * 1024, 10)
+        file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+        file_handler.setLevel(getattr(logging, cfg['DEBUG']))
+    logger.setLevel(getattr(logging, cfg['DEBUG']))
+    logger.addHandler(file_handler)
+
+def vvvv(*args, **kwargs):
+    print args
+    logger.debug(*args, **kwargs)
+
+def vv(*args, **kwargs):
+    logger.info(*args, **kwargs)
+
+class RtmBot(FileSystemEventHandler):
     def __init__(self, token):
         self.last_ping = 0
         self.token = token
         self.bot_plugins = []
+        self.plugin_dir = directory+'/plugins'
         self.slack_client = None
+        self.reload = True
+        for plugin in glob.glob(self.plugin_dir+'/*'):
+            sys.path.insert(0, plugin)
+        sys.path.insert(0, self.plugin_dir)
+        
+    def on_modified(self, event):
+        self.reload = True
+
     def connect(self):
         """Convenience method that creates Server instance"""
         self.slack_client = SlackClient(self.token)
         self.slack_client.rtm_connect()
+
     def start(self):
         self.connect()
         self.load_plugins()
@@ -38,6 +67,11 @@ class RtmBot(object):
             self.output()
             self.autoping()
             time.sleep(.1)
+            if self.reload:
+                self.bot_plugins = []
+                vvvv('reloading') 
+                self.load_plugins()
+            
     def autoping(self):
         #hardcode the interval to 3 seconds
         now = int(time.time())
@@ -45,11 +79,12 @@ class RtmBot(object):
             self.slack_client.server.ping()
             self.last_ping = now
     def input(self, data):
-        if "type" in data:
-            function_name = "process_" + data["type"]
-            dbg("got {}".format(function_name))
+        if 'type' in data:
+            function_name = 'process_' + data['type']
+            vvvv('got {}'.format(function_name))
             for plugin in self.bot_plugins:
                 plugin.register_jobs()
+                vvvv('doing plugin %s' % plugin.name)
                 plugin.do(function_name, data)
     def output(self):
         for plugin in self.bot_plugins:
@@ -61,58 +96,70 @@ class RtmBot(object):
                         time.sleep(.1)
                         limiter = False
                     message = output[1].encode('ascii','ignore')
-                    channel.send_message("{}".format(message))
+                    channel.send_message('{}'.format(message))
                     limiter = True
     def crons(self):
         for plugin in self.bot_plugins:
             plugin.do_jobs()
     def load_plugins(self):
-        for plugin in glob.glob(directory+'/plugins/*'):
-            sys.path.insert(0, plugin)
-            sys.path.insert(0, directory+'/plugins/')
-        for plugin in glob.glob(directory+'/plugins/*.py') + glob.glob(directory+'/plugins/*/*.py'):
-            logging.info(plugin)
+        for plugin in glob.glob(self.plugin_dir+'/*.py') + glob.glob(self.plugin_dir+'/*/*.py'):
+            vv("Plugin:"+plugin)
             name = plugin.split('/')[-1][:-3]
-#            try:
-            self.bot_plugins.append(Plugin(name))
-#            except:
-#                print "error loading plugin %s" % name
+            plg = None
+            try:
+                plg = Plugin(name) 
+            except Exception, e:
+                logging.exception('error loading plugin %s' % name)
+                continue
+            self.bot_plugins.append(plg)
+        self.reload = False
 
 class Plugin(object):
     def __init__(self, name, plugin_config={}):
         self.name = name
         self.jobs = []
-        self.module = __import__(name)
+        if name in sys.modules:  
+            old_module = sys.modules.pop(name)
+        try:
+            self.module = __import__(name)
+        except Exception, e:
+            print 'Error imporrting %s' % name
+            print str(e)
+            raise e
         self.register_jobs()
         self.outputs = []
         if name in config:
-            logging.info("config found for: " + name)
+            vv('config found for: ' + name)
             self.module.config = config[name]
         if 'setup' in dir(self.module):
             self.module.setup()
     def register_jobs(self):
         if 'crontable' in dir(self.module):
             for interval, function in self.module.crontable:
-                self.jobs.append(Job(interval, eval("self.module."+function)))
-            logging.info(self.module.crontable)
+                self.jobs.append(Job(interval, eval('self.module.'+function)))
+            if self.module.crontable:
+                vv("crontable:"+ str(self.module.crontable))
             self.module.crontable = []
         else:
             self.module.crontable = []
+
     def do(self, function_name, data):
         if function_name in dir(self.module):
             #this makes the plugin fail with stack trace in debug mode
-            if not debug:
+            if debug:
                 try:
-                    eval("self.module."+function_name)(data)
-                except:
-                    dbg("problem in module {} {}".format(function_name, data))
+                    vvvv('calling %s'%function_name)
+                    eval('self.module.'+function_name)(data)
+                except Exception, e:
+                    logging.exception('problem in module {} {}'.format(function_name, data))
             else:
-                eval("self.module."+function_name)(data)
-        if "catch_all" in dir(self.module):
+                eval('self.module.'+function_name)(data)
+        if 'catch_all' in dir(self.module):
             try:
                 self.module.catch_all(data)
-            except:
-                dbg("problem in catch all")
+            except Exception, e:
+                logging.exception('problem in catch all')
+
     def do_jobs(self):
         for job in self.jobs:
             job.check()
@@ -121,7 +168,7 @@ class Plugin(object):
         while True:
             if 'outputs' in dir(self.module):
                 if len(self.module.outputs) > 0:
-                    logging.info("output from {}".format(self.module))
+                    vv('output from {}'.format(self.module))
                     output.append(self.module.outputs.pop(0))
                 else:
                     break
@@ -135,16 +182,16 @@ class Job(object):
         self.interval = interval
         self.lastrun = 0
     def __str__(self):
-        return "{} {} {}".format(self.function, self.interval, self.lastrun)
+        return '{} {} {}'.format(self.function, self.interval, self.lastrun)
     def __repr__(self):
         return self.__str__()
     def check(self):
         if self.lastrun + self.interval < time.time():
-            if not debug:
+            if debug:
                 try:
                     self.function()
                 except:
-                    dbg("problem")
+                    vvvv('problem')
             else:
                 self.function()
             self.lastrun = time.time()
@@ -155,10 +202,11 @@ class UnknownChannel(Exception):
 
 
 def main_loop():
-    if "LOGFILE" in config:
-        logging.basicConfig(filename=config["LOGFILE"], level=logging.INFO, format='%(asctime)s %(message)s')
-    logging.info(directory)
+    vv("Directory:"+ directory)
     try:
+        observer = Observer()
+        observer.schedule(bot, bot.plugin_dir, recursive=True)
+        observer.start()
         bot.start()
     except KeyboardInterrupt:
         sys.exit(0)
@@ -177,23 +225,24 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     args = parse_args()
     directory = os.path.dirname(sys.argv[0])
     if not directory.startswith('/'):
-        directory = os.path.abspath("{}/{}".format(os.getcwd(),
+        directory = os.path.abspath('{}/{}'.format(os.getcwd(),
                                 directory
                                 ))
 
     config = yaml.load(file(args.config or 'rtmbot.conf', 'r'))
-    debug = config["DEBUG"]
-    bot = RtmBot(config["SLACK_TOKEN"])
+    debug = config['DEBUG'] == 'DEBUG'
+    setup_logger(config)
+    bot = RtmBot(config['SLACK_TOKEN'])
     site_plugins = []
     files_currently_downloading = []
     job_hash = {}
 
-    if config.has_key("DAEMON"):
-        if config["DAEMON"]:
+    if config.has_key('DAEMON'):
+        if config['DAEMON']:
             import daemon
             with daemon.DaemonContext():
                 main_loop()
