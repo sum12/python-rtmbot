@@ -22,7 +22,7 @@ def process_message(data):
             if args:
                 ret = fnname(data, **(args.groupdict()))
                 print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
-                outputs.append([data['channel'], ret])
+                outputs.append([data['channel'], ret or 'Nothing'])
                 return 
     
 tasks = {}
@@ -50,7 +50,7 @@ def todo(data, **args):
             for task in tasks[channel]:
                 output += "%i) %s\n" % (counter, task)
                 counter += 1
-            return output
+            return output 
         if text == "fin":
             tasks[channel] = []
             return 'OK'

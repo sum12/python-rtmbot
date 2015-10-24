@@ -1,6 +1,7 @@
 import os
 import json
 import re
+from datetime import datetime
 from csv import DictReader, DictWriter
 outputs = []
 crontable = []
@@ -10,7 +11,7 @@ funcs = {}
 def command(regex, outputs):
     global funcs
     def wrapper(func):
-        funcs.setdefault(regex, (func, outputs))
+        funcs.setdefault('['+regex[0]+regex[0].upper()+']'+regex[1:], (func, outputs))
         return func
     return wrapper
 
@@ -23,7 +24,7 @@ def process_message(data):
             if args:
                 ret = fnname(data, **(args.groupdict()))
                 print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
-                outputs.append([data['channel'], ret])
+                outputs.append([data['channel'], ret or 'Nothing'])
                 return 
     
 
@@ -75,13 +76,18 @@ def save(data, **details):
         with open('exp.csv','r') as f:
             rr = DictReader(f, ['by', 'amt'])
 #            print [str(d) for d in rr]
-            return str([d for d in rr]) 
+            return '\n'.join(['{by},{amt}'.format(**d)for d in rr if d['amt'] != 'amt']) 
     with open('exp.csv', 'a') as f:
         wr = DictWriter(f, ['by', 'amt'])
         wr.writerow(details)
     return '{by} spent Rs. {amt} in fuckedup plans'.format(**details)
 
-
+@command('closeaccount', outputs)
+def close(data, **details):
+    os.rename('exp.csv', 'exp'+datetime.now().strftime('%d-%h-%y,%H-%M-%S')+'.csv')
+    setup() 
+    if os.path.exists('exp.csv'):
+        return 'Closed'
 
 
 @command('total (?P<by>[a-z]+)', outputs)
@@ -90,7 +96,7 @@ def total(data, **details):
         return "{by} is not a memeber".format(**details)
     with open('exp.csv','r') as f:
         rr = DictReader(f, ['by', 'amt'])
-        return str(sum((int(d['amt']) for d in rr if d['by'] == details['by'])))
+        return str(sum((int(d['amt']) for d in rr if d['by'] == details['by']))) 
 
 
 @command('calc', outputs)
