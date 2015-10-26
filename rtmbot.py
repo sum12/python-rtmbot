@@ -18,6 +18,8 @@ from watchdog.observers import Observer
 from argparse import ArgumentParser
 
 from slackclient import SlackClient
+import threadpool
+from threadpool import ThreadPool
 
 logger = logging.getLogger('bot')
 logger.propagate = False
@@ -31,11 +33,12 @@ def setup_logger(cfg):
     logger.addHandler(file_handler)
 
 def vvvv(*args, **kwargs):
-    print args
     logger.debug(*args, **kwargs)
 
 def vv(*args, **kwargs):
     logger.info(*args, **kwargs)
+
+POOL = ThreadPool(3)
 
 class RtmBot(FileSystemEventHandler):
     def __init__(self, token):
@@ -45,6 +48,8 @@ class RtmBot(FileSystemEventHandler):
         self.plugin_dir = directory+'/plugins'
         self.slack_client = None
         self.reload = True
+        self.pool = POOL
+
         for plugin in glob.glob(self.plugin_dir+'/*'):
             sys.path.insert(0, plugin)
         sys.path.insert(0, self.plugin_dir)
@@ -107,7 +112,7 @@ class RtmBot(FileSystemEventHandler):
             name = plugin.split('/')[-1][:-3]
             plg = None
             try:
-                plg = Plugin(name) 
+                plg = Plugin(self, name) 
             except Exception, e:
                 logging.exception('error loading plugin %s' % name)
                 continue
@@ -115,9 +120,10 @@ class RtmBot(FileSystemEventHandler):
         self.reload = False
 
 class Plugin(object):
-    def __init__(self, name, plugin_config={}):
+    def __init__(self, bot, name, plugin_config={}):
         self.name = name
         self.jobs = []
+        self.pool = bot.pool
         if name in sys.modules:  
             old_module = sys.modules.pop(name)
         try:
@@ -162,7 +168,10 @@ class Plugin(object):
 
     def do_jobs(self):
         for job in self.jobs:
-            job.check()
+            # TODO: this should be like cron and not like poll
+            if job.check():
+                self.pool.add_task(job.function)
+
     def do_output(self):
         output = []
         while True:
@@ -187,15 +196,9 @@ class Job(object):
         return self.__str__()
     def check(self):
         if self.lastrun + self.interval < time.time():
-            if debug:
-                try:
-                    self.function()
-                except:
-                    vvvv('problem')
-            else:
-                self.function()
             self.lastrun = time.time()
-            pass
+            return True
+        return False
 
 class UnknownChannel(Exception):
     pass
