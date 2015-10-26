@@ -1,31 +1,53 @@
 # http://code.activestate.com/recipes/577187-python-thread-pool/
 from Queue import Queue
 from threading import Thread
+import logging
 
+logger = logging.getLogger('bot.pool')
+logger.setLevel(logging.DEBUG)
+
+
+ALLOW_SCALLING = not False
 class Worker(Thread):
     """Thread executing tasks from a given tasks queue"""
-    def __init__(self, tasks):
+    def __init__(self, tasks, burst=False):
         Thread.__init__(self)
         self.tasks = tasks
+        self.burst = burst
         self.daemon = True
         self.start()
     
     def run(self):
-        while True:
+        while True :
             func, args, kargs = self.tasks.get()
-            try: func(*args, **kargs)
-            except Exception, e: print e
+            try: 
+                func(*args, **kargs)
+            except Exception, e: 
+                logger.exception(' Exception in worker for task: func={func}\nargs={args}\nkwargs {kargs}'.format(func=func,args=args,kargs=kargs))
             self.tasks.task_done()
+            if self.burst:
+                logger.info('Burst Thread now exiting')
+                break
 
 class ThreadPool:
     """Pool of threads consuming tasks from a queue"""
     def __init__(self, num_threads):
-        self.tasks = Queue(num_threads)
-        for _ in range(num_threads): Worker(self.tasks)
+        self.max_threads = num_threads
+        self.tasks = Queue()
+        for _ in range(num_threads):
+            Worker(self.tasks)
 
     def add_task(self, func, *args, **kargs):
         """Add a task to the queue"""
+        logger.info('added tasks')
         self.tasks.put((func, args, kargs))
+        if ALLOW_SCALLING :
+            logger.debug('SCALLLING WORKER')
+            for _ in range(self.max_threads - self.tasks.qsize() ): 
+                Worker(self.tasks, burst=True)
+        else:
+            if self.max_threads < self.tasks.qsize():
+                logger.warn('QUEUE is full')
 
     def wait_completion(self):
         """Wait for completion of all the tasks in the queue"""

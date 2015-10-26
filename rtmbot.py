@@ -19,7 +19,7 @@ from argparse import ArgumentParser
 
 from slackclient import SlackClient
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('bot')
 logger.propagate = False
 
 def setup_logger(cfg):
