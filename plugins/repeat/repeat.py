@@ -26,7 +26,7 @@ def process_message(data):
     
     
 
-@command('repeat (?P<what>[a-zA-Z0-9 ]+)', outputs)
+@command('repeat (?P<what>[-a-zA-Z0-9 ,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]]+)', outputs)
 def repeat(data, what):
     return 'repeating ' + what
 
