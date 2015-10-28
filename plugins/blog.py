@@ -38,14 +38,16 @@ def process_message(data):
 def atTime(dt):
     def wrap():
         d = 0
+        i = 0
         a = datetime.today().date()
         b = datetime.strptime(dt,"%H:%M").time()
         while(d <= 0.0):
+            i += 1
             c = datetime.combine(a,b)
             d =time.mktime(c.timetuple()) - time.time()
-            a = datetime.today() + timedelta(seconds=60)
+            a = datetime.today() + timedelta(seconds=60*i)
             a = a.date()
-            print time.time(), time.mktime(c.timetuple()) 
+#            print time.time(), time.mktime(c.timetuple()) 
 
         return d
     return wrap
