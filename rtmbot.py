@@ -141,8 +141,12 @@ class Plugin(object):
             self.module.setup()
     def register_jobs(self):
         if 'crontable' in dir(self.module):
-            for interval, function in self.module.crontable:
-                self.jobs.append(Job(interval, eval('self.module.'+function)))
+            for checker, function in self.module.crontable:
+                job = Job(checker, eval('self.module.'+function))  
+                if job.isScheduled:
+                    self.pool.schedule_task(job.checker, job.function)
+                else:
+                    self.jobs.append(job)
             if self.module.crontable:
                 vv("crontable:"+ str(self.module.crontable))
             self.module.crontable = []
@@ -169,7 +173,7 @@ class Plugin(object):
     def do_jobs(self):
         for job in self.jobs:
             # TODO: this should be like cron and not like poll
-            if job.check():
+            if not job.isScheduled:
                 self.pool.add_task(job.function)
 
     def do_output(self):
@@ -186,18 +190,20 @@ class Plugin(object):
         return output
 
 class Job(object):
-    def __init__(self, interval, function):
+    def __init__(self, checker, function):
         self.function = function
-        self.interval = interval
+        self.checker = checker
+        self.isScheduled = hasattr(self.checker, '__call__')
         self.lastrun = 0
     def __str__(self):
-        return '{} {} {}'.format(self.function, self.interval, self.lastrun)
+        return '{} {} {}'.format(self.function, self.checker, self.lastrun)
     def __repr__(self):
         return self.__str__()
     def check(self):
-        if self.lastrun + self.interval < time.time():
-            self.lastrun = time.time()
-            return True
+        if not self.isScheduled:
+            if self.lastrun + self.checker < time.time():
+                self.lastrun = time.time()
+                return True
         return False
 
 class UnknownChannel(Exception):

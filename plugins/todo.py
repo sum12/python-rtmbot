@@ -2,14 +2,13 @@ import os
 import pickle
 outputs = []
 crontabs = []
-funcs={}
 
 import re
-
+funcs = {}
 def command(regex, outputs):
     global funcs
     def wrapper(func):
-        funcs.setdefault(regex, (func, outputs))
+        funcs.setdefault('['+regex[0]+regex[0].upper()+']'+regex[1:], (func, outputs))
         return func
     return wrapper
 
@@ -24,6 +23,8 @@ def process_message(data):
                 print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
                 outputs.append([data['channel'], ret or 'Nothing'])
                 return 
+    
+
     
 tasks = {}
 

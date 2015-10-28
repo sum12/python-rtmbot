@@ -1,6 +1,6 @@
 import time
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from  random import randint
 outputs = []
 crontable = []
@@ -34,15 +34,30 @@ def process_message(data):
                 print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
                 outputs.append([data['channel'], ret or 'Nothing'])
                 return 
-    
 
+def atTime(dt):
+    def wrap():
+        d = 0
+        a = datetime.today().date()
+        b = datetime.strptime(dt,"%H:%M").time()
+        while(d <= 0.0):
+            c = datetime.combine(a,b)
+            d =time.mktime(c.timetuple()) - time.time()
+            a = datetime.today() + timedelta(seconds=60)
+            a = a.date()
+            print time.time(), time.mktime(c.timetuple()) 
 
+        return d
+    return wrap
 
+orig_name = 'blog.txt'
+save_filepath = '/home/pi/blog/whispering-forest-1331/source/_posts/{dt}-daily-log.markdown'
+para_regex = '(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)'
 template = """---
 layout: post
 title: Daily-log
 date: {dt}
-path: /home/pi/blog/whispering-forest-1331/source/_posts/{dt}-daily-log.markdown
+path: '/home/pi/blog/whispering-forest-1331/source/_posts/{dt}-daily-log.markdown'
 ---
 """
 
@@ -59,47 +74,54 @@ motivate=[
         ]
 
 def setup():
-    if not os.path.exists('blog.txt'):
-        with open('blog.txt','w') as f:
-            f.write(template.format(dt=datetime.now().strftime('%Y-%m-%d')))
-    if not os.path.exists('state'):
+    if state() == STATES['blank']:
         f=open('state','w')
         f.close()
+        with open(orig_name,'w') as f:
+            f.write(template.format(dt=datetime.now().strftime('%Y-%m-%d')))
 
-@command('blog (?P<what>[-a-zA-Z0-9 ,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]]+)', outputs)
+@command('blog '+ para_regex, outputs)
 def blogging(data, **details):
-    state(STATES['started'])
     fs = '`{dt}`: {what}\n\n\n'.format(dt=datetime.now().strftime('%Y-%m-%d'), what=details['what'])
-    with open('blog.txt','a') as f:
+    ret = ''
+    if state() == STATES['blank']:
+        with open(orig_name,'w') as f:
+            f.write(template.format(dt=datetime.now().strftime('%Y-%m-%d')))
+            ret += 'Created the file.\n'
+    with open(orig_name,'a') as f:
         f.write(fs)
-    return 'Thanks a lot, have a wonderfull day'
-
+    state(STATES['started'])
+    return ret + 'Thanks a lot, have a wonderfull day'
+ 
 
 
 def state(now=''):
     if now == '':
-        with open('state','r') as f:
-            st = f.readline()
-            return STATES[st] if st in STATES else STATES['blank']
+        try:
+            with open('state','r') as f:
+                st = f.readline()
+                return STATES[st] if st in STATES else STATES['blank']
+        except:
+            return STATES['blank']
     else:
         with open('state', 'w') as f:
             f.write(now)
 
 
+
+
+crontable.append([atTime("23:59"), 'save'])
 @command('saveblog',outputs)
-def save(data, **details):
-    orig_name = 'blog.txt'
-    if os.path.exists(orig_name):
-        new_name='/home/pi/blog/whispering-forest-1331/source/_posts/{dt}-daily-log.markdown'.format(dt=datetime.now().strftime('%Y-%m-%d'))
+def save(data=None, **details):                    # Crontasks are called without any arguments,
+    if state() == STATES['started']:
+        new_name=save_filepath.format(dt=datetime.now().strftime('%Y-%m-%d'))
         if os.path.exists(new_name):
-#            outputs.append(['blog', "Cant Save, a file already exists"])
-            return 'Cant Save, a file already exists'
+            outputs.append(['blog', "Cant Save, a file already exists"])
         os.rename(orig_name, new_name)
-        with open(orig_name,'w') as f:
-            f.write(template.format(dt=datetime.now().strftime('%Y-%m-%d')))
-            sf=open('state','w')
-            sf.close()
-            return 'Saved and reloaded'
+        with open('state','w') as sf:
+            outputs.append(['blog', "Saved and Reloaded"])
+    else:
+         ask()
 
 
 crontable.append([3*60*60,'ask'])
@@ -107,3 +129,9 @@ def ask():
     if state() in (STATES['started'], STATES['blank']):
         m = len(motivate)
         outputs.append(['blog',motivate[randint(1, m*10) % m]])
+
+
+
+#crontable.append([atTime(), 'timeit'])
+#def timeit(data=None, **details):
+#    outputs.append(['debug', str(datetime.now())])

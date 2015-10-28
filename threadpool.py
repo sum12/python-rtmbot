@@ -1,7 +1,8 @@
 # http://code.activestate.com/recipes/577187-python-thread-pool/
-from Queue import Queue
+from Queue import Queue, Full
 from threading import Thread
 import logging
+import time
 
 logger = logging.getLogger('bot.pool')
 logger.setLevel(logging.DEBUG)
@@ -40,14 +41,26 @@ class ThreadPool:
     def add_task(self, func, *args, **kargs):
         """Add a task to the queue"""
         logger.info('added tasks')
-        self.tasks.put((func, args, kargs))
-        if ALLOW_SCALLING :
-            logger.debug('SCALLLING WORKER')
-            for _ in range(self.max_threads - self.tasks.qsize() ): 
-                Worker(self.tasks, burst=True)
-        else:
-            if self.max_threads < self.tasks.qsize():
-                logger.warn('QUEUE is full')
+        try:
+            logger.debug("name :%s"%func.__name__)
+            self.tasks.put((func, args, kargs), block=False)
+        except Full, e:
+            if ALLOW_SCALLING:
+                logger.debug('SCALLLING WORKER')
+                for _ in range(self.max_threads - self.tasks.qsize() ): 
+                    Worker(self.tasks, burst=True)
+            else:
+                if self.max_threads < self.tasks.qsize():
+                    logger.warn('QUEUE is full')
+
+    def schedule_task(self, checker, func, *args, **kwargs):
+        def waiter():
+            while True:
+                t = checker()
+                logger.debug("waiting for %s"% t)
+                time.sleep(t)
+                self.add_task(func, *args, **kwargs)
+        self.add_task(waiter)
 
     def wait_completion(self):
         """Wait for completion of all the tasks in the queue"""
