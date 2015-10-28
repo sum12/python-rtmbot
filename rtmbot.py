@@ -173,7 +173,7 @@ class Plugin(object):
     def do_jobs(self):
         for job in self.jobs:
             # TODO: this should be like cron and not like poll
-            if not job.isScheduled:
+            if not job.isScheduled and job.check():
                 self.pool.add_task(job.function)
 
     def do_output(self):
