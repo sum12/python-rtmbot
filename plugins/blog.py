@@ -35,17 +35,34 @@ def process_message(data):
                 outputs.append([data['channel'], ret or 'Nothing'])
                 return 
 
-def atTime(dt):
+
+def make_cron(s)
+    def y(x,n=None):
+        r = n.next() if n!=None else 0
+        while 1:
+            for i in x:
+                yield i,r
+            if n:
+                r = n.next() 
+            else:
+                raise StopIteration()
+
+    hours=y(range(24), None)
+    minutes=y(range(4), hours)
+    seconds=y(range(4), minutes)
+
+
+def atTime(**dt):
     def wrap():
         d = 0
         i = 0
-        a = datetime.today().date()
-        b = datetime.strptime(dt,"%H:%M").time()
+        a = datetime.now()
+        b = datetime.now().replace(**dt)
         while(d <= 0.0):
             i += 1
             c = datetime.combine(a,b)
-            d =time.mktime(c.timetuple()) - time.time()
-            a = datetime.today() + timedelta(seconds=60*i)
+            d = time.mktime(c.timetuple()) - time.time()
+            a = datetime.today() + timedelta(seconds=i)
             a = a.date()
 #            print time.time(), time.mktime(c.timetuple()) 
 
@@ -112,7 +129,7 @@ def state(now=''):
 
 
 
-crontable.append([atTime("23:59"), 'save'])
+#crontable.append([atTime("23:59"), 'save'])
 @command('saveblog',outputs)
 def save(data=None, **details):                    # Crontasks are called without any arguments,
     if state() == STATES['started']:
@@ -134,6 +151,7 @@ def ask():
 
 
 
-#crontable.append([atTime(), 'timeit'])
-#def timeit(data=None, **details):
+crontable.append([atTime("10","%S"), 'timeit'])
+def timeit(data=None, **details):
+    print "timeit", str(datetime.now().ctime())
 #    outputs.append(['debug', str(datetime.now())])
