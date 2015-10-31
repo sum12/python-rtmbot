@@ -35,6 +35,12 @@ def process_message(data):
                 outputs.append([data['channel'], ret or 'Nothing'])
                 return 
 
+
+
+# HACK HACK HACK !!!!!
+datetime.strptime("01","%H")
+# http://bugs.python.org/issue7980
+
 def atTime(dt):
     def wrap():
         d = 0
