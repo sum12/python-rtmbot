@@ -194,7 +194,7 @@ class Job(object):
         self.function = function
         self.checker = checker
         self.isScheduled = hasattr(self.checker, '__call__')
-        self.lastrun = 0
+        self.lastrun = time.time()
     def __str__(self):
         return '{} {} {}'.format(self.function, self.checker, self.lastrun)
     def __repr__(self):
