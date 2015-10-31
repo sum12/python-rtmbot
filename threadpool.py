@@ -42,7 +42,7 @@ class ThreadPool:
         """Add a task to the queue"""
         logger.info('added tasks')
         try:
-            logger.debug("name :%s"%func.__name__)
+            logger.info("name :%s"%func.__name__)
             self.tasks.put((func, args, kargs), block=False)
         except Full, e:
             if ALLOW_SCALLING:
@@ -57,7 +57,7 @@ class ThreadPool:
         def waiter():
             while True:
                 t = checker()
-                logger.debug("waiting for %s"% t)
+                logger.info("waiting for %s for %s"% (t, func.__name__))
                 time.sleep(t)
                 self.add_task(func, *args, **kwargs)
         self.add_task(waiter)
