@@ -90,7 +90,7 @@ def setup():
 
 @command('blog '+ para_regex, outputs)
 def blogging(data, **details):
-    fs = '`{dt}`: {what}\n\n\n'.format(dt=datetime.now().strftime('%Y-%m-%d'), what=details['what'])
+    fs = '`{dt}`: {what}\n\n\n'.format(dt=datetime.now().strftime('%H-%M'), what=details['what'])
     ret = ''
     if state() == STATES['blank']:
         with open(orig_name,'w') as f:
@@ -118,7 +118,7 @@ def state(now=''):
 
 
 
-crontable.append([atTime("23:59"), 'save'])
+crontable.append([atTime("23:50"), 'save'])
 @command('saveblog',outputs)
 def save(data=None, **details):                    # Crontasks are called without any arguments,
     if state() == STATES['started']:
@@ -141,5 +141,5 @@ def ask():
 
 
 #crontable.append([atTime(), 'timeit'])
-#def timeit(data=None, **details):
+#def timeit(data=None, **details)
 #    outputs.append(['debug', str(datetime.now())])
