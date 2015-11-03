@@ -242,8 +242,8 @@ def save(data=None, **details):                    # Crontasks are called withou
 # causing the function to reinitialize, once the next bit has toggeled.
 
 crontable.append([cron(
-    second = rr(range(0,59,59)),    
-    minute = rr(range(0,59,59)),    
+    second = rr(range(0,60,59)),    
+    minute = rr(range(0,60,59)),    
     hour = rr(range(8,24,3)),       
     ),'ask'])
 def ask():

@@ -59,7 +59,7 @@ class ThreadPool:
                 logger.info("waiting for %s for %s"% (t, func.__name__))
                 time.sleep(t)
                 self.add_task(func, *args, **kwargs)
-            logger.debug('Done Executing the cron')
+            logger.info('Done Executing the cron')
         self.add_task(waiter)
 
     def wait_completion(self):
