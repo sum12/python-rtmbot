@@ -55,11 +55,11 @@ class ThreadPool:
 
     def schedule_task(self, checker, func, *args, **kwargs):
         def waiter():
-            while True:
-                t = checker()
+            for t in checker:
                 logger.info("waiting for %s for %s"% (t, func.__name__))
                 time.sleep(t)
                 self.add_task(func, *args, **kwargs)
+            logger.debug('Done Executing the cron')
         self.add_task(waiter)
 
     def wait_completion(self):

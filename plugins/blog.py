@@ -1,7 +1,8 @@
 import time
 import os
 from datetime import datetime, timedelta
-from  random import randint
+from  random import randint, randrange
+
 outputs = []
 crontable = []
 # This is testcode for threadpool.py
@@ -36,12 +37,115 @@ def process_message(data):
                 return 
 
 
-
 # HACK HACK HACK !!!!!
 datetime.strptime("01","%H")
 # http://bugs.python.org/issue7980
 
-def atTime(dt):
+# DOC(sumitj) Randomizer function allowing to select a
+# random value from a series of ranges, the selected values
+# are from continuous ranges i.e. from # a-b, b-c, ... 
+# where lst=[a,b,c]
+# Returning a function so that it can be reinitialized when
+# lst is exhausted.
+
+
+def rr(lst):
+    def rry():
+        x = lst[0]
+        for y in lst[1:]:
+            yield randrange(x,y)
+            x=y
+    return rry
+
+# DOC(sumitj) : This is something similar to counter
+# where the bits toggle one after other, leading to a
+# cron like behaviour
+#
+# curnt should be a callable, which return something iterable,
+# it can be a list, or a generator
+
+def recr(curnt,nxt=None):
+    rt = nxt.next() if nxt!=None else 0
+    while 1:
+        for i in curnt(): 
+            yield i,rt
+        if nxt:
+            rt = nxt.next() 
+        else:
+            raise StopIteration()
+
+# DOC(sumitj) helper function 
+
+def make_cron(*s):
+    bit=None 
+    for lst in s: 
+        if hasattr(lst, '__call__'):
+            bit=recr(lst, bit)
+            continue
+        try:
+            # DOC(sumitj) lambdas are always lazy evaluated,
+            # since loop iteration cause lst to change, the lazy
+            # evaluation leads to wrong values being evalated,
+            # this is one way to have the values stuck to function.
+            int(lst)
+            bit=recr(lambda act=lst : range(act),bit)
+            continue
+        except:
+            pass
+        try:
+            iter(lst)   
+            bit=recr(lambda act=lst: act, bit)
+        except:
+            pass
+         
+    return bit
+
+def getdays(mnth, year):
+    if mnth == 2 :
+        if (year % 400 == 0 or year % 4 == 0):
+            return 29
+        else:
+            return 28
+    elif mnth in [1,3,5,7,8,10,11]:
+            return 31
+    else:   
+        return 30
+
+
+def cron(**dt):
+    # TODO: 
+    # (1) if the supplied values are nearer to current time, 
+    #     then the evaluation willl be faster
+    # (2) while iterating the days can go invalid eg: when iterating
+    #     from jan to feb, the days will keep on counting till 31. since
+    #     the range once decided it is not reevaluted.
+    d = { 'second':60, 'minute':60, 'hour':24, 'month':range(1,13), 'year':range(2015,2115)}
+    d['day'] = range(1,getdays(d['month'], d['year'])+1)
+    for k,v in d.items():
+        dt.setdefault(k,v)
+    def checker():
+        z = make_cron(
+                dt['year'], dt['month'], dt['day'], dt['hour'], dt['minute'], dt['second']
+                )
+        for i in z:
+#            print i
+            n = datetime.now()
+            (second, (minute, (hour, (day, (month, (year, _)))))) = i
+            nxt = datetime.now()
+            try:
+                nxt = datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
+            except Exception,e:
+                continue
+            wait_time = (nxt - n).total_seconds() 
+            if wait_time < 0 :
+#                print 'negative', wait_time
+                continue
+            yield wait_time
+    return checker()
+
+
+# DOC(sumitj) awaiting deprecation
+def atTime(*dt):
     def wrap():
         d = 0
         i = 0
@@ -118,7 +222,9 @@ def state(now=''):
 
 
 
-crontable.append([atTime("23:50"), 'save'])
+crontable.append([cron(
+        hour=[23]
+    ),'save'])
 @command('saveblog',outputs)
 def save(data=None, **details):                    # Crontasks are called without any arguments,
     if state() == STATES['started']:
@@ -128,11 +234,18 @@ def save(data=None, **details):                    # Crontasks are called withou
         os.rename(orig_name, new_name)
         with open('state','w') as sf:
             outputs.append(['blog', "Saved and Reloaded"])
-    else:
-         ask()
 
 
-crontable.append([3*60*60,'ask'])
+# DOC(sumitj) 
+# rr selects one from the given range
+# range has only part 0-59, when the range is exhusted, it will raise a stopiteration
+# causing the function to reinitialize, once the next bit has toggeled.
+
+crontable.append([cron(
+    second = rr(range(0,59,59)),    
+    minute = rr(range(0,59,59)),    
+    hour = rr(range(8,24,3)),       
+    ),'ask'])
 def ask():
     if state() in (STATES['started'], STATES['blank']):
         m = len(motivate)
@@ -140,6 +253,7 @@ def ask():
 
 
 
-#crontable.append([atTime(), 'timeit'])
-#def timeit(data=None, **details)
+#crontable.append([cron(second=rr(range(0,60,5))), 'timeit'])
+#def timeit(data=None, **details):
+#    print "timeit", str(datetime.now().ctime())
 #    outputs.append(['debug', str(datetime.now())])
