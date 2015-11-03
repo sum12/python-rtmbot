@@ -60,17 +60,25 @@ class RtmBot(FileSystemEventHandler):
     def connect(self):
         """Convenience method that creates Server instance"""
         self.slack_client = SlackClient(self.token)
-        self.slack_client.rtm_connect()
+        self.connected = False
+        if self.slack_client.rtm_connect():
+            self.connected = True
 
     def start(self):
         self.connect()
         self.load_plugins()
         while True:
-            for reply in self.slack_client.rtm_read():
-                self.input(reply)
-            self.crons()
-            self.output()
-            self.autoping()
+            try:
+                for reply in self.slack_client.rtm_read():
+                    self.input(reply)
+                self.crons()
+            except:
+                self.connected = False
+                self.connect()
+                self.crons()
+            else:
+                self.autoping()
+                self.output()
             time.sleep(.1)
             if self.reload:
                 self.bot_plugins = []
@@ -193,7 +201,11 @@ class Job(object):
     def __init__(self, checker, function):
         self.function = function
         self.checker = checker
-        self.isScheduled = hasattr(self.checker, '__call__')
+        try:
+            iter(checker)
+            self.isScheduled = True
+        except:
+            self.isScheduled = False
         self.lastrun = 0
     def __str__(self):
         return '{} {} {}'.format(self.function, self.checker, self.lastrun)
