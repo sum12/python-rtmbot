@@ -117,17 +117,24 @@ def cron(**dt):
     # TODO: 
     # (1) if the supplied values are nearer to current time, 
     #     then the evaluation willl be faster
+    #     possibel fix: start iterating from `now`
     # (2) while iterating the days can go invalid eg: when iterating
     #     from jan to feb, the days will keep on counting till 31. since
     #     the range once decided it is not reevaluted.
     d = { 'second':60, 'minute':60, 'hour':24, 'month':range(1,13), 'year':range(2015,2115)}
     d['day'] = range(1,getdays(d['month'], d['year'])+1)        # datetime expects days of month to start from 1 and not 0
+                                                                # for february fix the progam needs to be restarted once in feb 
+                                                                # so that 'day' is back to 28/29. And fix for iteration purpose
+                                                                # will be, start rotating list.
     for k,v in d.items():
         dt.setdefault(k,v)
     def checker():
         z = make_cron(
                 dt['year'], dt['month'], dt['day'], dt['hour'], dt['minute'], dt['second']
                 )
+        logger.debug('making generator')
+        logged = False
+        logged2 = False
         for i in z:
 #            print i
             n = datetime.now()
@@ -136,11 +143,19 @@ def cron(**dt):
             try:
                 nxt = datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
             except Exception,e:
-                logger.debug('date is incorrect')
+                if not logged:  # okay we have not logged, lets log it
+                    logger.debug('date is incorrect')
+                    logged = True
                 continue
+            if logged:
+                logged = False # but this will never get that exception again since the cron has moved ahead
+                logger.debug('incorect date loop has been pased once,')
             wait_time = (nxt - n).total_seconds() 
             if wait_time < 0 :
 #                print 'negative', wait_time
+                if not logged2:
+                    logger.debug('got negative')
+                    logged2 = True
                 continue
             logger.info('returning once from checker should never print negative or invalid date, unless restarted')
             yield wait_time
