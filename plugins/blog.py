@@ -1,5 +1,6 @@
 import time
 import os
+import logging
 from datetime import datetime, timedelta
 from  random import randint, randrange
 
@@ -13,7 +14,7 @@ crontable = []
 #    time.sleep(5)
 #    outputs.append(('debug',str(counter)))
 
-
+logger = logging.getLogger('bot.blog')
 #crontable = [( 2, 'test'), ]
 import re
 funcs = {}
@@ -120,7 +121,7 @@ def cron(**dt):
     #     from jan to feb, the days will keep on counting till 31. since
     #     the range once decided it is not reevaluted.
     d = { 'second':60, 'minute':60, 'hour':24, 'month':range(1,13), 'year':range(2015,2115)}
-    d['day'] = range(1,getdays(d['month'], d['year'])+1)
+    d['day'] = range(1,getdays(d['month'], d['year'])+1)        # datetime expects days of month to start from 1 and not 0
     for k,v in d.items():
         dt.setdefault(k,v)
     def checker():
@@ -135,11 +136,13 @@ def cron(**dt):
             try:
                 nxt = datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
             except Exception,e:
+                logger.debug('date is incorrect')
                 continue
             wait_time = (nxt - n).total_seconds() 
             if wait_time < 0 :
 #                print 'negative', wait_time
                 continue
+            logger.info('returning once from checker should never print negative or invalid date, unless restarted')
             yield wait_time
     return checker()
 
@@ -154,7 +157,7 @@ def atTime(*dt):
         while(d <= 0.0):
             i += 1
             c = datetime.combine(a,b)
-            d =time.mktime(c.timetuple()) - time.time()
+            d = time.mktime(c.timetuple()) - time.time()
             a = datetime.today() + timedelta(seconds=60*i)
             a = a.date()
 #            print time.time(), time.mktime(c.timetuple()) 

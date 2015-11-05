@@ -49,6 +49,7 @@ class RtmBot(FileSystemEventHandler):
         self.slack_client = None
         self.reload = True
         self.pool = POOL
+        vv('Started')
 
         for plugin in glob.glob(self.plugin_dir+'/*'):
             sys.path.insert(0, plugin)
@@ -82,7 +83,7 @@ class RtmBot(FileSystemEventHandler):
             time.sleep(.1)
             if self.reload:
                 self.bot_plugins = []
-                vvvv('reloading') 
+                vv('reloading') 
                 self.load_plugins()
             
     def autoping(self):
@@ -114,6 +115,7 @@ class RtmBot(FileSystemEventHandler):
     def crons(self):
         for plugin in self.bot_plugins:
             plugin.do_jobs()
+
     def load_plugins(self):
         for plugin in glob.glob(self.plugin_dir+'/*.py') + glob.glob(self.plugin_dir+'/*/*.py'):
             vv("Plugin:"+plugin)
@@ -180,7 +182,8 @@ class Plugin(object):
 
     def do_jobs(self):
         for job in self.jobs:
-            # TODO: this should be like cron and not like poll
+            # TODO: Only non-scheduled jobs will be going through this cron;
+            # as of now there are no job and will probably get rid of this.
             if not job.isScheduled and job.check():
                 self.pool.add_task(job.function)
 
