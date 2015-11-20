@@ -6,6 +6,7 @@ from  random import randint, randrange
 
 outputs = []
 crontable = []
+
 # This is testcode for threadpool.py
 # counter = 0
 #def test():
@@ -33,7 +34,7 @@ def process_message(data):
             args = re.match(regex, data['text'])
             if args:
                 ret = fnname(data, **(args.groupdict()))
-                print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
+#                print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
                 outputs.append([data['channel'], ret or 'Nothing'])
                 return 
 
@@ -75,30 +76,40 @@ def recr(curnt,nxt=None):
         else:
             raise StopIteration()
 
-# DOC(sumitj) helper function 
+def rotrng(limit,rotBy=None,rotTo=None):
+    lst = None
+    try:
+        int(limit)
+        lst = range(limit)
+    except:
+        lst=limit
+    if rotBy:
+        return lst[rotBy:]+lst[:rotBy]
+    elif rotTo:
+        rotBy = lst.index(rotTo)
+        return lst[rotBy:]+lst[:rotBy]
+    return lst
 
+# DOC(sumitj) helper function 
 def make_cron(*s):
     bit=None 
     for lst in s: 
         if hasattr(lst, '__call__'):
             bit=recr(lst, bit)
-            continue
-        try:
-            # DOC(sumitj) lambdas are always lazy evaluated,
-            # since loop iteration cause lst to change, the lazy
-            # evaluation leads to wrong values being evalated,
-            # this is one way to have the values stuck to function.
-            int(lst)
-            bit=recr(lambda act=lst : range(act),bit)
-            continue
-        except:
-            pass
-        try:
-            iter(lst)   
-            bit=recr(lambda act=lst: act, bit)
-        except:
-            pass
-         
+        else:
+            try:
+                # DOC(sumitj) lambdas are always lazy evaluated,
+                # since loop iteration cause lst to change, the lazy
+                # evaluation leads to wrong values being evalated,
+                # this is one way to have the values stuck to function.
+                int(lst)
+                bit=recr(lambda act=lst : range(act),bit)
+            except:
+                try:
+                    iter(lst)   
+                    bit=recr(lambda act=lst: act, bit)
+                except:
+                    raise Exception('Unable to make cron for %s' % lst) 
     return bit
 
 def getdays(mnth, year):
@@ -121,14 +132,24 @@ def cron(**dt):
     # (2) while iterating the days can go invalid eg: when iterating
     #     from jan to feb, the days will keep on counting till 31. since
     #     the range once decided it is not reevaluted.
-    d = { 'second':60, 'minute':60, 'hour':24, 'month':range(1,13), 'year':range(2015,2115)}
-    d['day'] = range(1,getdays(d['month'], d['year'])+1)        # datetime expects days of month to start from 1 and not 0
-                                                                # for february fix the progam needs to be restarted once in feb 
-                                                                # so that 'day' is back to 28/29. And fix for iteration purpose
-                                                                # will be, start rotating list.
-    for k,v in d.items():
-        dt.setdefault(k,v)
     def checker():
+        
+        rotatr = datetime.now()
+        d = { 
+                'second':rotrng(60,rotBy=rotatr.second),
+                'minute':rotrng(60,rotBy=rotatr.minute),
+                'hour':rotrng(24,rotBy=rotatr.hour),
+                'month':rotrng(range(1,13),rotTo=rotatr.month),
+                'year':rotrng(range(2015,2115),rotTo=rotatr.year)
+                }
+        # datetime expects days of month to start from 1 and not 0
+        # for february fix the progam needs to be restarted once in feb 
+        # so that 'day' is back to 28/29. And fix for iteration purpose
+        # will be, start rotating list.
+
+        d['day'] = rotrng(range(1,getdays(d['month'], d['year'])+1),rotTo=rotatr.day)
+        for k,v in d.items():
+            dt.setdefault(k,v)
         z = make_cron(
                 dt['year'], dt['month'], dt['day'], dt['hour'], dt['minute'], dt['second']
                 )
@@ -260,7 +281,7 @@ def save(data=None, **details):                    # Crontasks are called withou
 # causing the function to reinitialize, once the next bit has toggeled.
 
 crontable.append([cron(
-    second = rr(range(0,60,59)),    
+    second = rr(range(0,60,59)),
     minute = rr(range(0,60,59)),    
     hour = rr(range(8,24,3)),       
     ),'ask'])
