@@ -28,7 +28,7 @@ def process_message(data):
     
 tasks = {}
 
-FILE="plugins/todo.data"
+FILE="todo.data"
 if os.path.isfile(FILE):
     tasks = pickle.load(open(FILE, 'rb'))
 
