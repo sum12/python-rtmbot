@@ -40,19 +40,25 @@ def recr(curnt,nxt=None):
         else:
             raise StopIteration()
 
+# DOC(sumitj) just rotating the would not help as it would miss the stop iteration exception
+# at the standard end of listi, ie at 59 in case of seconds. thus hours wont advance gnerating
+# negative date. Also if the script started at 43 sec then the list would always start from
+# 43 sec thus 0-43 would be always missed.
+
 def rotrng(limit,rotBy=None,rotTo=None):
-    lst = None
-    try:
-        int(limit)
-        lst = range(limit)
-    except:
-        lst=limit
-    if rotBy:
-        return lst[rotBy:]+lst[:rotBy]
-    elif rotTo:
-        rotBy = lst.index(rotTo)
-        return lst[rotBy:]+lst[:rotBy]
-    return lst
+    def gnr(limit, rotBy, rotTo):
+        lst = None
+        try:
+            int(limit)
+            lst = range(limit)
+        except:
+            lst=limit
+        if not rotBy and rotTo:
+            rotBy = lst.index(rotTo)
+        yield lst[rotBy:]
+        while 1:
+            yield lst
+    return (lambda z = gnr(limit, rotBy, rotTo): next(z))
 
 # DOC(sumitj) helper function 
 def make_cron(*s):
@@ -121,12 +127,12 @@ def cron(**dt):
         logged = False
         logged2 = False
         for i in z:
-#            print i
+            print i
             n = datetime.now()
             (second, (minute, (hour, (day, (month, (year, _)))))) = i
             nxt = datetime.now()
             try:
-                nxt = datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
+                nxt = datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=0)
             except Exception,e:
                 if not logged:  # okay we have not logged, lets log it
                     logger.debug('date is incorrect')
