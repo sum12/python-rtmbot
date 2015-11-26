@@ -95,10 +95,10 @@ class RtmBot(FileSystemEventHandler):
     def input(self, data):
         if 'type' in data:
             function_name = 'process_' + data['type']
-            vvvv('got {}'.format(function_name))
+#            vvvv('got {}'.format(function_name))
             for plugin in self.bot_plugins:
                 plugin.register_jobs()
-                vvvv('doing plugin %s' % plugin.name)
+#                vvvv('doing plugin %s' % plugin.name)
                 plugin.do(function_name, data)
     def output(self):
         for plugin in self.bot_plugins:

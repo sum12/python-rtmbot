@@ -25,6 +25,8 @@ class Worker(Thread):
                 func(*args, **kargs)
             except Exception, e: 
                 logger.exception(' Exception in worker for task: func={func}\nargs={args}\nkwargs {kargs}'.format(func=func,args=args,kargs=kargs))
+            else:
+                logger.info('Done executing %s' % func.__name__)
             self.tasks.task_done()
             if self.burst:
                 logger.info('Burst Thread now exiting')
@@ -40,9 +42,9 @@ class ThreadPool:
 
     def add_task(self, func, *args, **kargs):
         """Add a task to the queue"""
-        logger.info('added tasks')
+#        logger.info('added tasks')
         try:
-            logger.info("name :%s"%func.__name__)
+            logger.info("added tasks name :%s"%func.__name__)
             self.tasks.put((func, args, kargs), block=False)
         except Full, e:
             if ALLOW_SCALLING:
@@ -59,12 +61,13 @@ class ThreadPool:
                 logger.info("waiting for %s for %s"% (t, func.__name__))
                 time.sleep(t)
                 self.add_task(func, *args, **kwargs)
-            logger.info('Done Executing the cron')
         self.add_task(waiter)
 
     def wait_completion(self):
         """Wait for completion of all the tasks in the queue"""
         self.tasks.join()
+
+
 
 #if __name__ == '__main__':
 #    from random import randrange

@@ -5,7 +5,7 @@ from lib import Plugin
 import logging
 outputs = []
 crontable = []
-logger = logging.getLogger('bot.blog')
+logger = logging.getLogger('bot.todo')
 plgn = Plugin()
 command = lambda regex : plgn.command(regex, outputs) 
 process_message = plgn.process_message

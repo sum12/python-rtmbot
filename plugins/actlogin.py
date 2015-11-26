@@ -1,20 +1,31 @@
 import requests
 from bs4 import BeautifulSoup
-
+import time
 from lib import Plugin, cron
 import logging
 import passwordfile
 outputs = []
 crontable = []
-logger = logging.getLogger('bot.blog')
+logger = logging.getLogger('bot.actlogin')
+logger.setLevel(logging.DEBUG)
 plgn = Plugin()
 command = lambda regex : plgin.command(regex, outputs) 
 process_message = plgn.process_message
 
 
-crontable.append([cron(hour=[21], minute=[0], second=[0]), 'relogin'])
-def relogin():
+crontable.append([cron(hour=[5], minute=[0], second=[0]), 'relogin'])
+def relogin(data=None, **details):
     logger.info('Now Logging out')
+    logout()
+    logger.info('Logged Out successfully')
+    time.sleep(10)
+    logger.info('Logging in now')
+    login()
+    logger.info('Logged in successfully')
+
+    outputs.append(['random', 'Relogged in successfully'])
+
+def login():
     resp = requests.get("http://portal.acttv.in/web/blr/home")
     l = resp.content
     logger.debug( "got content")
@@ -36,9 +47,8 @@ def relogin():
     s = requests.session()
     r = requests.post(url,pl)
     logger.debug( r)
-    logger.info('Logged Out successfully')
-    time.sleep(5)
-    logger.info('Logging in now')
+
+def logout():
     resp = requests.get("http://portal.acttv.in/web/blr/home")
     l = resp.content
     logger.debug( "got content")
@@ -55,7 +65,3 @@ def relogin():
     s = requests.session()
     r = requests.post(url,pl)
     logger.debug( r)
-    logger.info('Logged in successfully')
-
-    outputs.append(['random', 'Relogged in successfully'])
-

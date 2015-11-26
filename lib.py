@@ -12,7 +12,7 @@ import re
 # Returning a function so that it can be reinitialized when
 # lst is exhausted.
 
-logger = logging.getLogger('bot.blog')
+logger = logging.getLogger('bot.lib')
 
 
 def rr(lst):
