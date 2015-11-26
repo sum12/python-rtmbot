@@ -3,6 +3,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from  random import randint, randrange
+import re
 
 # DOC(sumitj) Randomizer function allowing to select a
 # random value from a series of ranges, the selected values
