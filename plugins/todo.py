@@ -1,29 +1,16 @@
 import os
 import pickle
-outputs = []
-crontabs = []
-
 import re
-funcs = {}
-def command(regex, outputs):
-    global funcs
-    def wrapper(func):
-        funcs.setdefault('['+regex[0]+regex[0].upper()+']'+regex[1:], (func, outputs))
-        return func
-    return wrapper
+from lib import Plugin
+import logging
+outputs = []
+crontable = []
+logger = logging.getLogger('bot.blog')
+plgn = Plugin()
+command = lambda regex : plgn.command(regex, outputs) 
+process_message = plgn.process_message
 
 
-def process_message(data):
-    global funcs
-    for regex, (fnname, outputs) in funcs.items():
-        if 'text' in data:
-            args = re.match(regex, data['text'])
-            if args:
-                ret = fnname(data, **(args.groupdict()))
-                print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
-                outputs.append([data['channel'], ret or 'Nothing'])
-                return 
-    
 
     
 tasks = {}
@@ -32,7 +19,7 @@ FILE="todo.data"
 if os.path.isfile(FILE):
     tasks = pickle.load(open(FILE, 'rb'))
 
-@command('tasks|fin|done|show|todo',outputs)
+@command('tasks|fin|done|show|todo')
 def todo(data, **args):
     global tasks
     channel = data["channel"]
