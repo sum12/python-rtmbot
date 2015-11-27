@@ -127,7 +127,7 @@ def cron(**dt):
         logged = False
         logged2 = False
         for i in z:
-            print i
+#            print i
             n = datetime.now()
             (second, (minute, (hour, (day, (month, (year, _)))))) = i
             nxt = datetime.now()

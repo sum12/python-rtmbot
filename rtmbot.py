@@ -38,17 +38,15 @@ def vvvv(*args, **kwargs):
 def vv(*args, **kwargs):
     logger.info(*args, **kwargs)
 
-POOL = ThreadPool(3)
-
 class RtmBot(FileSystemEventHandler):
-    def __init__(self, token):
+    def __init__(self, config):
         self.last_ping = 0
-        self.token = token
+        self.token = config['SLACK_TOKEN']
         self.bot_plugins = []
         self.plugin_dir = directory+'/plugins'
         self.slack_client = None
         self.reload = True
-        self.pool = POOL
+        self.pool = ThreadPool(config['POOL_SIZE'])
         vv('Started')
 
         for plugin in glob.glob(self.plugin_dir+'/*'):
@@ -260,7 +258,7 @@ if __name__ == '__main__':
     config = yaml.load(file(args.config or 'rtmbot.conf', 'r'))
     debug = config['DEBUG'] == 'DEBUG'
     setup_logger(config)
-    bot = RtmBot(config['SLACK_TOKEN'])
+    bot = RtmBot(config)
     site_plugins = []
     files_currently_downloading = []
     job_hash = {}
