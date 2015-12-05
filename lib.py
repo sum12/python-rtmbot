@@ -148,7 +148,7 @@ def cron(**dt):
                     logger.debug('got negative')
                     logged2 = True
                 continue
-            logger.info('returning once from checker should never print negative or invalid date, unless restarted')
+            logger.debug('returning once from checker should never print negative or invalid date, unless restarted')
             yield wait_time
     return checker()
 

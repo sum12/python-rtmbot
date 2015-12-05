@@ -26,7 +26,7 @@ class Worker(Thread):
             except Exception, e: 
                 logger.exception(' Exception in worker for task: func={func}\nargs={args}\nkwargs {kargs}'.format(func=func,args=args,kargs=kargs))
             else:
-                logger.info('Done executing %s' % func.__name__)
+                logger.debug('Done executing %s' % func.__name__)
             self.tasks.task_done()
             if self.burst:
                 logger.info('Burst Thread now exiting')
@@ -44,11 +44,11 @@ class ThreadPool:
         """Add a task to the queue"""
 #        logger.info('added tasks')
         try:
-            logger.info("added tasks name :%s"%func.__name__)
+            logger.debug("added tasks name :%s"%func.__name__)
             self.tasks.put((func, args, kargs), block=False)
         except Full, e:
             if ALLOW_SCALLING:
-                logger.debug('SCALLLING WORKER')
+                logger.info('SCALLLING WORKER')
                 for _ in range(self.max_threads - self.tasks.qsize() ): 
                     Worker(self.tasks, burst=True)
             else:
@@ -58,7 +58,7 @@ class ThreadPool:
     def schedule_task(self, checker, func, *args, **kwargs):
         def waiter():
             for t in checker:
-                logger.info("waiting for %s for %s"% (t, func.__name__))
+                logger.debug("waiting for %s for %s"% (t, func.__name__))
                 time.sleep(t)
                 self.add_task(func, *args, **kwargs)
         self.add_task(waiter)
