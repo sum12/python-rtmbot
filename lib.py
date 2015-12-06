@@ -96,30 +96,41 @@ def getdays(mnth, year):
 
 def cron(**dt):
     # TODO: 
-    # (1) if the supplied values are nearer to current time, 
-    #     then the evaluation willl be faster
-    #     possibel fix: start iterating from `now`
     # (2) while iterating the days can go invalid eg: when iterating
     #     from jan to feb, the days will keep on counting till 31. since
     #     the range once decided it is not reevaluted.
+    #     Partially fixed.
     def checker():
         
         rotatr = datetime.now()
-        d = { 
-                'second':rotrng(60,rotBy=rotatr.second),
-                'minute':rotrng(60,rotBy=rotatr.minute),
-                'hour':rotrng(24,rotBy=rotatr.hour),
-                'month':rotrng(range(1,13),rotTo=rotatr.month),
-                'year':rotrng(range(2015,2115),rotTo=rotatr.year)
-                }
+        d = [ 
+                ('year',rotrng(range(2015,2115),rotTo=rotatr.year), range(2015,2115)) ,
+                ('month',rotrng(range(1,13),rotTo=rotatr.month), range(1,13)),
+                ('hour',rotrng(24,rotBy=rotatr.hour), 24),
+                ('minute',rotrng(60,rotBy=rotatr.minute), 60),
+                ('second',rotrng(60,rotBy=rotatr.second), 60) ]
         # datetime expects days of month to start from 1 and not 0
         # for february fix the progam needs to be restarted once in feb 
         # so that 'day' is back to 28/29. And fix for iteration purpose
         # will be, start rotating list.
+        totdays = range(1,getdays(rotatr.month,rotatr.year)+1)
+        day = ('day',rotrng(totdays,rotTo=rotatr.day), totdays)
+        d.insert(2, day)
 
-        d['day'] = rotrng(range(1,getdays(d['month'], d['year'])+1),rotTo=rotatr.day)
-        for k,v in d.items():
-            dt.setdefault(k,v)
+        # if rotation should only be done so that we arrive at current time,
+        # but if minute=[22] and second=None, then second means *, so its range will be
+        # [0-60], now rotating that does not make sense, As it has to start form 0 and
+        # not from 'rotated second'.
+        # So if found, set the non-rotated-value, else keep use rotated value
+        found = False
+        for k,rv,nrv in d:
+            if k in dt :
+                found = True
+                continue
+            elif found and k not in dt:
+                dt[k] = nrv
+            else:
+                dt[k] = rv
         z = make_cron(
                 dt['year'], dt['month'], dt['day'], dt['hour'], dt['minute'], dt['second']
                 )
