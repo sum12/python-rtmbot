@@ -5,7 +5,7 @@ import logging
 from lib import *
 outputs = []
 crontable = []
-logger = logging.getLogger('bot.actlogin')
+logger = logging.getLogger('bot.sleeper')
 logger.setLevel(logging.DEBUG)
 plgn = Plugin()
 command = lambda regex : plgn.command(regex, outputs) 
@@ -23,20 +23,20 @@ def sleeper():
     curr = dt.datetime.now()
     calc = (dt.timedelta(seconds=totalSleept) + startTime)
     diff  = (calc - curr)
-    if diff.total_seconds() > 0:
+    if diff.total_seconds() > 1 or diff.total_seconds() < -1:
         global count
         count += 1
-        if count >= 60:
+        if count >= 180:
             count = 0
             outputs.append(['random', 'diff is high'])
 
 @command('restart')
-def restart(data, **details):
-    subprocess.Popen(['sudo', 'service', 'rtmbot.init','restart'])
+def reload(data, **details):
+    with open('plugins/reload.txt', 'a') as f:
+        f.write(dt.datetime.now().isoformat()+'\n')
+    return 'Done'
 
-@command('stop')
-def restart(data, **details):
-    subprocess.Popen(['sudo', 'service', 'rtmbot.init','stop'])
+
 
 @command('slept')
 def time(data, **details):

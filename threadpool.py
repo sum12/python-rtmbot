@@ -1,6 +1,6 @@
 # http://code.activestate.com/recipes/577187-python-thread-pool/
 from Queue import Queue, Full
-from threading import Thread
+from threading import Thread, Event
 import logging
 import time
 
@@ -8,7 +8,12 @@ logger = logging.getLogger('bot.pool')
 logger.setLevel(logging.DEBUG)
 
 
-ALLOW_SCALLING = not False
+ALLOW_SCALLING = False
+
+
+class StopThread(Exception):
+    pass
+
 class Worker(Thread):
     """Thread executing tasks from a given tasks queue"""
     def __init__(self, tasks, burst=False):
@@ -23,11 +28,15 @@ class Worker(Thread):
             func, args, kargs = self.tasks.get()
             try: 
                 func(*args, **kargs)
+            except StopThread, e:
+                logger.info('Shutting non-scheduled thread')
+                break
             except Exception, e: 
-                logger.exception(' Exception in worker for task: func={func}\nargs={args}\nkwargs {kargs}'.format(func=func,args=args,kargs=kargs))
+                logger.exception('Exception in worker for task: func={func}\nargs={args}\nkwargs {kargs}'.format(func=func,args=args,kargs=kargs))
             else:
                 logger.debug('Done executing %s' % func.__name__)
-            self.tasks.task_done()
+            finally:
+                self.tasks.task_done()
             if self.burst:
                 logger.info('Burst Thread now exiting')
                 break
@@ -36,9 +45,10 @@ class ThreadPool:
     """Pool of threads consuming tasks from a queue"""
     def __init__(self, num_threads):
         self.max_threads = num_threads
+        self.term_cond = Event()
         self.tasks = Queue()
         for _ in range(num_threads):
-            Worker(self.tasks)
+            Worker(self.tasks, self.term_cond)
 
     def add_task(self, func, *args, **kargs):
         """Add a task to the queue"""
@@ -59,13 +69,24 @@ class ThreadPool:
         def waiter():
             for t in checker:
                 logger.info("waiting for %s for %s"% (t, func.__name__))
-                time.sleep(t)
+                self.term_cond.wait(t)
+                if self.term_cond.isSet():
+                    logger.info('thread for %s returning' % func.__name__)
+                    return
                 self.add_task(func, *args, **kwargs)
         self.add_task(waiter)
 
     def wait_completion(self):
         """Wait for completion of all the tasks in the queue"""
+        self.term_cond.set()
+        def stopper():
+            raise StopThread()
+        for _ in range(self.max_threads):
+            self.add_task(stopper)
         self.tasks.join()
+
+
+
 
 
 

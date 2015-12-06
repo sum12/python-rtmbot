@@ -55,6 +55,8 @@ class RtmBot(FileSystemEventHandler):
         
     def on_modified(self, event):
         self.reload = True
+        self.pool.wait_completion()
+        self.pool = ThreadPool(self.pool.max_threads)
 
     def connect(self):
         """Convenience method that creates Server instance"""
@@ -90,6 +92,7 @@ class RtmBot(FileSystemEventHandler):
         if now > self.last_ping + 3:
             self.slack_client.server.ping()
             self.last_ping = now
+
     def input(self, data):
         if 'type' in data:
             function_name = 'process_' + data['type']
@@ -98,6 +101,7 @@ class RtmBot(FileSystemEventHandler):
                 plugin.register_jobs()
 #                vvvv('doing plugin %s' % plugin.name)
                 plugin.do(function_name, data)
+
     def output(self):
         for plugin in self.bot_plugins:
             limiter = False
@@ -110,6 +114,7 @@ class RtmBot(FileSystemEventHandler):
                     message = output[1].encode('ascii','ignore')
                     channel.send_message('{}'.format(message))
                     limiter = True
+
     def crons(self):
         for plugin in self.bot_plugins:
             plugin.do_jobs()
@@ -147,6 +152,7 @@ class Plugin(object):
             self.module.config = config[name]
         if 'setup' in dir(self.module):
             self.module.setup()
+
     def register_jobs(self):
         if 'crontable' in dir(self.module):
             for checker, function in self.module.crontable:
