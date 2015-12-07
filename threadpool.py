@@ -48,7 +48,7 @@ class ThreadPool:
         self.term_cond = Event()
         self.tasks = Queue()
         for _ in range(num_threads):
-            Worker(self.tasks, self.term_cond)
+            Worker(self.tasks)
 
     def add_task(self, func, *args, **kargs):
         """Add a task to the queue"""
