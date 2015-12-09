@@ -65,3 +65,42 @@ def logout():
     s = requests.session()
     r = requests.post(url,pl)
     logger.debug( r)
+
+
+# this is the default cron, that executes every 120 sec.
+# it is executed my main thread directly
+crontable.append(120, 'checkAndLogin')
+def checkAndLogin():
+    if isLoggedOut():
+        try:
+            login()
+        except Exception, e:
+            logger.exception('Error in logging in')
+            outputs.append(['random', 'Currently logged out, will try to login'])
+        else:
+            outputs.append(['random', 'Had to relogin'])
+
+
+def isLoggedOut():
+    try:
+        resp = requests.get("http://portal.acttv.in/web/blr/home")
+        l = resp.content
+        logger.debug( "got content")
+        bs = BeautifulSoup(l)
+        f=bs.findAll('form')[1]
+        logger.debug( "found form")
+        url = f.attrs['action']
+        logger.debug( "found action")
+        pl = {}
+        allinps = f.findAll('input')
+        logger.debug( "found input")
+        for tag in allinps:
+            if tag.attrs['name'] == 'loggedInUser':
+                return False
+        return True
+    except Exception,e:
+        logger.exception('error getting logon status')
+        return False
+
+        
+
