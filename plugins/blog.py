@@ -126,7 +126,7 @@ def ask():
 #    outputs.append(['debug', str(datetime.now())])
 
 
-@command('rename', '(?P<title>[a-zA-Z0-9!@#$%^&*() {}:?"<>]+)')
+@command('rename (?P<title>[a-zA-Z0-9!@#$%^&*() {}:?"<>]+)')
 def rename(data, **details):
     if state() == STATES['started']:
         alllines = open(orig_name,'r').readlines()
