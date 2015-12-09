@@ -36,6 +36,7 @@ date: {dt}
 path: '/home/pi/blog/whispering-forest-1331/source/_posts/{dt}-daily-log.markdown'
 ---
 """
+header_slice = slice(1,len(template.splitlines())-2)
 
 STATES={
         'blank':'blank',
@@ -96,6 +97,7 @@ def save(data=None, **details):                    # Crontasks are called withou
         new_name=save_filepath.format(dt=datetime.now().strftime('%Y-%m-%d'))
         if os.path.exists(new_name):
             outputs.append(['blog', "Cant Save, a file already exists"])
+            return
         os.rename(orig_name, new_name)
         with open('state','w') as sf:
             outputs.append(['blog', "Saved and Reloaded"])
@@ -122,3 +124,14 @@ def ask():
 #def timeit(data=None, **details):
 #    print "timeit", str(datetime.now().ctime())
 #    outputs.append(['debug', str(datetime.now())])
+
+
+@command('rename', '(?P<title>[a-zA-Z0-9!@#$%^&*() {}:?"<>]+)')
+def rename(data, **details):
+    if state() == STATES['started']:
+        alllines = open(orig_name,'r').readlines()
+        header = yaml.load("".join(alllines[header_slice]))
+        header['title'] = details['title']
+        alllines[header_slice] = yaml.dump(header,default_flow_style=False).splitlines(True)
+        open(orig_name).writelines(alllines)
+        return 'Ok'
