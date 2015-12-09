@@ -15,10 +15,10 @@ totalSleept = 0
 startTime = dt.datetime.now()
 count = 0
 
-crontable.append([cron(), 'sleeper'])
+crontable.append([cron(minute=range(0,60,5)), 'sleeper'])
 def sleeper():
     global totalSleept
-    totalSleept = totalSleept + 1
+    totalSleept = totalSleept + 5
     global startTime
     curr = dt.datetime.now()
     calc = (dt.timedelta(seconds=totalSleept) + startTime)
@@ -26,12 +26,14 @@ def sleeper():
     if diff.total_seconds() > 1 or diff.total_seconds() < -1:
         global count
         count += 1
-        if count >= 180:
+        if count >= 12: # 12*5=60secs, 1min wait before reloading
             count = 0
-            outputs.append(['random', 'diff is high'])
+            outputs.append(['random', 'diff is high, reloading'])
+            reload()
+
 
 @command('restart')
-def reload(data, **details):
+def reload(data=None, **details):
     with open('plugins/reload.txt', 'a') as f:
         f.write(dt.datetime.now().isoformat()+'\n')
     return 'Done'
