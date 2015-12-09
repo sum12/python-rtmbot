@@ -69,7 +69,8 @@ class ThreadPool:
     def schedule_task(self, checker, func, *args, **kwargs):
         def waiter():
             for t in checker:
-                logger.info("waiting for %s for %s"% (t, func.__name__))
+                if t > 10:   # Not good enough! as t can vary
+                    logger.info("waiting for %s for %s"% (t, func.__name__))
                 self.term_cond.wait(t)
                 if self.term_cond.isSet():
                     logger.info('thread for %s returning' % func.__name__)

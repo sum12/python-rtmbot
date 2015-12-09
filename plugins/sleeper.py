@@ -15,7 +15,7 @@ totalSleept = 0
 startTime = dt.datetime.now()
 count = 0
 
-crontable.append([cron(minute=range(0,60,5)), 'sleeper'])
+crontable.append([cron(second=range(0,60,5)), 'sleeper'])
 def sleeper():
     global totalSleept
     totalSleept = totalSleept + 5
