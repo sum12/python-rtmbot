@@ -16,11 +16,12 @@ class StopThread(Exception):
 
 class Worker(Thread):
     """Thread executing tasks from a given tasks queue"""
-    def __init__(self, tasks, burst=False):
+    def __init__(self, tasks, count=None, burst=False):
         Thread.__init__(self)
         self.tasks = tasks
         self.burst = burst
         self.daemon = True
+        self.count = count 
         self.start()
     
     def run(self):
@@ -29,7 +30,7 @@ class Worker(Thread):
             try: 
                 func(*args, **kargs)
             except StopThread, e:
-                logger.info('Shutting non-scheduled thread')
+                logger.info('Shutting non-scheduled thread, %s' % (self.count or ''))
                 break
             except Exception, e: 
                 logger.exception('Exception in worker for task: func={func}\nargs={args}\nkwargs {kargs}'.format(func=func,args=args,kargs=kargs))
@@ -47,8 +48,8 @@ class ThreadPool:
         self.max_threads = num_threads
         self.term_cond = Event()
         self.tasks = Queue()
-        for _ in range(num_threads):
-            Worker(self.tasks)
+        for i in range(num_threads):
+            Worker(self.tasks,count=i)
 
     def add_task(self, func, *args, **kargs):
         """Add a task to the queue"""
