@@ -18,7 +18,7 @@ count = 0
 crontable.append([cron(second=range(0,60,5)), 'sleeper'])
 def sleeper():
     global totalSleept
-    totalSleept = totalSleept or 0 
+    totalSleept = totalSleept or -5  # should start from 0 tonullify effect of next line but only for first time,
     totalSleept = totalSleept + 5
     global startTime
     startTime = startTime or dt.datetime.now()
@@ -30,7 +30,11 @@ def sleeper():
         count += 1
         if count >= 12: # 12*5=60secs, 1min wait before reloading
             count = 0
-            outputs.append(['random', 'diff is high, reloading'])
+            outputs.append(['random', 'diff is high, reloading'+"Should be is {calc}, ie {diff} from {curr}".format(            
+            calc = calc.strftime("%H:%M:%S"),
+            diff = diff.total_seconds(),
+            curr = curr.strftime("%H:%M:%S"),
+            )])
             reload()
 
 
