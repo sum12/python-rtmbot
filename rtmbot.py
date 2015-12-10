@@ -46,7 +46,8 @@ class RtmBot(FileSystemEventHandler):
         self.plugin_dir = directory+'/plugins'
         self.slack_client = None
         self.reload = True
-        self.pool = ThreadPool(config['POOL_SIZE'])
+        self.pool = None
+        self.pool_size = config['POOL_SIZE']
         vv('Started')
 
         for plugin in glob.glob(self.plugin_dir+'/*'):
@@ -54,9 +55,9 @@ class RtmBot(FileSystemEventHandler):
         sys.path.insert(0, self.plugin_dir)
         
     def on_modified(self, event):
-        self.reload = True
         self.pool.wait_completion()
-        self.pool = ThreadPool(self.pool.max_threads)
+        self.pool = None
+        self.reload = True
 
     def connect(self):
         """Convenience method that creates Server instance"""
@@ -67,6 +68,8 @@ class RtmBot(FileSystemEventHandler):
 
     def start(self):
         self.connect()
+        if not self.pool:
+            self.pool = ThreadPool(self.pool_size)
         self.load_plugins()
         while True:
             try:
@@ -83,6 +86,8 @@ class RtmBot(FileSystemEventHandler):
             time.sleep(.1)
             if self.reload:
                 self.bot_plugins = []
+                if not self.pool:
+                    self.pool = ThreadPool(self.pool_size)
                 vv('reloading') 
                 self.load_plugins()
             
@@ -136,7 +141,7 @@ class Plugin(object):
     def __init__(self, bot, name, plugin_config={}):
         self.name = name
         self.jobs = []
-        self.pool = bot.pool
+        self.bot = bot
         if name in sys.modules:  
             old_module = sys.modules.pop(name)
         try:
@@ -158,7 +163,7 @@ class Plugin(object):
             for checker, function in self.module.crontable:
                 job = Job(checker, eval('self.module.'+function))  
                 if job.isScheduled:
-                    self.pool.schedule_task(job.checker, job.function)
+                    self.bot.pool.schedule_task(job.checker, job.function)
                 else:
                     self.jobs.append(job)
             if self.module.crontable:
@@ -189,7 +194,7 @@ class Plugin(object):
             # TODO: Only non-scheduled jobs will be going through this cron;
             # as of now there are no job and will probably get rid of this.
             if not job.isScheduled and job.check():
-                self.pool.add_task(job.function)
+                self.bot.pool.add_task(job.function)
 
     def do_output(self):
         output = []
