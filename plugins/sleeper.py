@@ -18,13 +18,21 @@ count = 0
 crontable.append([cron(second=range(0,60,5)), 'sleeper'])
 def sleeper():
     global totalSleept
-    totalSleept = totalSleept or -5  # should start from 0 tonullify effect of next line but only for first time,
-    totalSleept = totalSleept + 5
     global startTime
+    if totalSleept == None:
+        totalSleept = 0
+    else:
+        totalSleept = totalSleept + 5
     startTime = startTime or dt.datetime.now()
     curr = dt.datetime.now()
     calc = (dt.timedelta(seconds=totalSleept) + startTime)
     diff  = (calc - curr)
+
+    logger.debug("Should be is {calc}, ie {diff} from {curr}".format(            
+            calc = calc.strftime("%H:%M:%S"),
+            diff = diff.total_seconds(),
+            curr = curr.strftime("%H:%M:%S"),
+            ))
     if diff.total_seconds() > 5 or diff.total_seconds() < -5:
         global count
         count += 1
