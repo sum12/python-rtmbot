@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from  random import randint
 from lib import *
+import yaml
 
 import re
 outputs = []
@@ -129,9 +130,12 @@ def ask():
 @command('rename (?P<title>[a-zA-Z0-9!@#$%^&*() {}:?"<>]+)')
 def rename(data, **details):
     if state() == STATES['started']:
-        alllines = open(orig_name,'r').readlines()
+        alllines = None
+        with open(orig_name,'r') as f:
+            alllines = f.readlines()
         header = yaml.load("".join(alllines[header_slice]))
         header['title'] = details['title']
         alllines[header_slice] = yaml.dump(header,default_flow_style=False).splitlines(True)
-        open(orig_name).writelines(alllines)
+        with open(orig_name) as f:
+            f.writelines(alllines)
         return 'Ok'
