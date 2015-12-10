@@ -43,7 +43,7 @@ def reload(data=None, **details):
 
 
 @command('slept')
-def time(data, **details):
+def timeit(data, **details):
     global totalSleept
     global startTime
     curr = dt.datetime.now()
