@@ -95,7 +95,8 @@ def isLoggedOut():
         allinps = f.findAll('input')
         logger.debug( "found input")
         for tag in allinps:
-            if tag.attrs['name'] == 'loggedInUser':
+            if tag.attrs.get('name') and tag.attrs['name'] == 'loggedInUser':
+                logger.info("Already logged in")
                 return False
         return True
     except Exception,e:

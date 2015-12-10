@@ -11,19 +11,21 @@ plgn = Plugin()
 command = lambda regex : plgn.command(regex, outputs) 
 process_message = plgn.process_message
 
-totalSleept = 0
-startTime = dt.datetime.now()
+totalSleept = None
+startTime = None
 count = 0
 
 crontable.append([cron(second=range(0,60,5)), 'sleeper'])
 def sleeper():
     global totalSleept
+    totalSleept = totalSleept or 0 
     totalSleept = totalSleept + 5
     global startTime
+    startTime = startTime or dt.datetime.now()
     curr = dt.datetime.now()
     calc = (dt.timedelta(seconds=totalSleept) + startTime)
     diff  = (calc - curr)
-    if diff.total_seconds() > 1 or diff.total_seconds() < -1:
+    if diff.total_seconds() > 5 or diff.total_seconds() < -5:
         global count
         count += 1
         if count >= 12: # 12*5=60secs, 1min wait before reloading
