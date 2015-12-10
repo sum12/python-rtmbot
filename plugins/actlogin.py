@@ -69,7 +69,7 @@ def logout():
 
 # this is the default cron, that executes every 120 sec.
 # it is executed my main thread directly
-crontable.append([ 120, 'checkAndLogin' ])
+crontable.append([ cron(minute=range(0,60,2),second=[0]), 'checkAndLogin' ])
 def checkAndLogin():
     if isLoggedOut():
         try:
