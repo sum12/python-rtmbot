@@ -4,8 +4,6 @@ outputs = []
 funcs={}
 import re,youtube_dl,getpass,os
 
-
-
 def command(regex, outputs):
     global funcs
     def wrapper(func):
@@ -38,11 +36,23 @@ def tell(data,what=None):
 			queue (link) 
 				This function appends the link to the download queue. Pass 'a' to download the audio.
 			begin 
-				This initiates the download of the queue
+				This initiates the download of the queue.
+			list all downloads
+				This function will simply return all the items that are present in the downloads directory on raspberry pi.
 			ip
-				This will return the ip of DJPI 
+				This will return the ip of DJPI. 
 		"""		
 	return string
+
+#This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
+def link_downloader(link,location):
+	y = {'outtmpl':location,'nooverwrites':'True'}
+        if (link.split(" "))[1] == 'a':
+                y = {'outtmpl':location,'nooverwrites':'True','format': 'bestaudio/best','postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192',}]}
+       		link = str((link.split(" "))[0])
+	with youtube_dl.YoutubeDL(y) as ydl:
+                ydl.download([link])
+        return "done"
 
 @command('download (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
 def download(data, what):
@@ -50,29 +60,30 @@ def download(data, what):
 	location = '/home/'+user+'/bot_youtube_downloads/'
 	if not os.access(location,os.F_OK):
 		os.mkdir(location)
+	
 	l = list(what)
 	l.remove('>')
 	l.remove('<')
 	what = "".join(l)
 	location = location + '%(title)s.%(ext)s'
 	location = unicode(location)
-	y = {'outtmpl':location,'nooverwrites':'True'}
-	if (what.split(" "))[1] == 'a':
-		y = {'outtmpl':location,'nooverwrites':'True','format': 'bestaudio/best','postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192',}]}
-	with youtube_dl.YoutubeDL(y) as ydl:
-		ydl.download([what])
-	return "done"
+	
+	output = link_downloader(what,location)
+	return output
 
 @command('queue (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
 def queue(data,what):
 	f = open('download_queue.txt','a')
+	
 	l = list(what)
 	l.remove('>')
 	l.remove('<')
 	what = "".join(l)
+	
 	f.write(what)
 	f.write('\n')
 	f.close()
+	
 	return what+ 'added to download queue'
 
 @command('begin',outputs)
@@ -93,15 +104,18 @@ def begin(data,what = None):
 	for link in data:		
 		print link
 		if not link==" " or not link == "":
-			y = {'outtmpl':location}
-			if (link.split(" "))[1] == 'a':
-                		y = {'outtmpl':location,'format': 'bestaudio/best','postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192',}]}
-	        		link =str(link.split(" ")[0])
-			with youtube_dl.YoutubeDL(y) as ydl:
-        	        	ydl.download([link])		
-	print "OUT OF LOOP !"
+			link_downloader(link,location)
 	os.remove("download_queue.txt")
 	return "All links have been downloaded on to your Pi"
+
+@command('list all downloads',outputs)
+def listings(data,what=None):
+	print "Hi"
+	user = getpass.getuser()
+	location = '/home/'+user+'/bot_youtube_downloads/'
+	output = "\n".join(os.listdir(location))
+	print location , output
+	return output
 
 @command('ip',outputs)
 def ip(data, what=None):
