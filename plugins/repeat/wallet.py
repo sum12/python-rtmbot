@@ -25,7 +25,7 @@ def process_message(data):
 
 def making_database():
 	f = open("wallet.txt",'w')
-	string  = "{'cash':0,'savings':0}"
+	string  = "{'cash':0,'savings':0,'pay':{},'receive':{}}"
 	f.write(string)
 	f.write("\n")
 	f.close()
@@ -57,8 +57,21 @@ def accountant(marker,amount,description=" "):
 
 @command('wallet',outputs)
 def wallet(data,what=None):
-	return "Welcome to wallet !"
-
+	final =  """
+	Welcome to wallet ! Following are the commands and their descriptions:
+	1) wallet (debit/credit/savings) (amount) (description of transaction)
+	2) cash left 
+		To check the amount left in wallet
+	3) savings done
+		To check the amount of money saved
+	4) statement (no. of last transactions you want to see)
+	5) statement (debit/credit/savings) (no.of last specific transaction you want to see)
+	6) money (pay/receive) (name of the person) (amount included)
+	7) check (pay/receive)
+		To check how many people you owe to or owe to you 
+	ENJOY !!
+"""
+	return final
 @command('wallet (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
 def transaction(data, what):
 	global amount
@@ -128,5 +141,58 @@ def statement(data,what):
 				what=what-1
 		lines = final
 	return "\n".join(lines)
-
-
+@command('money (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
+def pay(data,what):	
+	global amount
+	user = getpass.getuser()
+	if not os.access("wallet.txt",os.F_OK):
+		making_database()
+	reading_database()
+	what = what.split(" ")
+	what[0]=str(what[0])
+	what[1] = str(what[1])
+	what[2]=int(what[2])
+	if what[0]=='pay':
+		print amount
+		if what[1] in (amount['pay']).keys():
+			(amount['pay'])[what[1]]=amount['pay'][what[1]]+what[2]
+		elif str(what[1]) in (amount['receive']).keys():
+			if what[2]>int((amount['receive'])[what[1]]):
+				(amount['pay'])[what[1]]=what[2]-(amount['receive'])[what[1]]
+				del (amount['receive'])[what[1]]
+			elif what[2]<int((amount['receive'])[what[1]]):
+				((amount['receive'])[what[1]])=int((amount['receive'])[what[1]]) - what[2]
+			else:
+				del (amount['receive'])[what[1]]
+		else:
+			print "HI"
+			(amount['pay'])[str(what[1])]=what[2]
+	elif what[0]=='receive':
+		if str(what[1]) in (amount['receive']).keys():
+			(amount['receive'])[what[1]]=amount['receive'][what[1]]+what[2]
+		elif str(what[1]) in (amount['pay']).keys():
+			if what[2]>int((amount['pay'])[what[1]]):
+				(amount['receive'])[what[1]]=what[2]-(amount['pay'])[what[1]]
+				del (amount['pay'])[what[1]]
+			elif what[2]<int((amount['pay'])[what[1]]):
+				((amount['pay'])[what[1]])=int((amount['pay'])[what[1]]) - what[2]
+			else:
+				del (amount['pay'])[what[1]]
+		else:
+			(amount['receive'])[str(what[1])]=what[2]
+	updating_database()
+	return "NOTED !"
+@command('check (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
+def check(data,what):	
+	global amount
+	user = getpass.getuser()
+	if not os.access("wallet.txt",os.F_OK):
+		return "Please initiate a wallet!"
+	reading_database()
+	what = str(what)
+	if what=='pay':
+		s =  (amount['pay']).items()
+	elif what =='receive':
+		s =(amount['receive']).items()
+	s = map(str,s)
+	return "\n".join(s)
