@@ -47,9 +47,11 @@ def tell(data,what=None):
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
 def link_downloader(link,location):
 	y = {'outtmpl':location,'nooverwrites':'True'}
-        if (link.split(" "))[1] == 'a':
+        x = link.split(" ")
+	if len(x)>1 and x[1] == 'a':
                 y = {'outtmpl':location,'nooverwrites':'True','format': 'bestaudio/best','postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192',}]}
-       		link = str((link.split(" "))[0])
+       		link = str(x[0])
+	print "Hi"
 	with youtube_dl.YoutubeDL(y) as ydl:
                 ydl.download([link])
         return "done"
@@ -101,10 +103,12 @@ def begin(data,what = None):
         location = unicode(location)
 	data = links.split("\n")
 	data=data[:-1]
+	count = len(data)
 	for link in data:		
-		print link
+		print str(count) + " videos/audios are to yet be downloaded"
 		if not link==" " or not link == "":
 			link_downloader(link,location)
+		count = count - 1
 	os.remove("download_queue.txt")
 	return "All links have been downloaded on to your Pi"
 
