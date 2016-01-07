@@ -55,6 +55,8 @@ class RtmBot(FileSystemEventHandler):
         sys.path.insert(0, self.plugin_dir)
         
     def on_modified(self, event):
+        if not self.pool:
+            return 
         self.pool.wait_completion()
         self.pool = None
         self.reload = True
@@ -68,6 +70,8 @@ class RtmBot(FileSystemEventHandler):
 
     def start(self):
         self.connect()
+        # DOC(sumitjami) This code is to executed only once in the lifetime.
+        # when the bot starts executing.
         if not self.pool:
             self.pool = ThreadPool(self.pool_size)
         self.load_plugins()
@@ -103,7 +107,7 @@ class RtmBot(FileSystemEventHandler):
             function_name = 'process_' + data['type']
 #            vvvv('got {}'.format(function_name))
             for plugin in self.bot_plugins:
-                plugin.register_jobs()
+#                plugin.register_jobs()
 #                vvvv('doing plugin %s' % plugin.name)
                 plugin.do(function_name, data)
 
@@ -126,7 +130,6 @@ class RtmBot(FileSystemEventHandler):
 
     def load_plugins(self):
         for plugin in glob.glob(self.plugin_dir+'/*.py') + glob.glob(self.plugin_dir+'/*/*.py'):
-            vv("Plugin:"+plugin)
             name = plugin.split('/')[-1][:-3]
             plg = None
             try:
@@ -149,11 +152,9 @@ class Plugin(object):
         except Exception, e:
             print 'Error imporrting %s' % name
             print str(e)
-            raise e
-        self.register_jobs()
+            self.disabled = True
         self.outputs = []
         if name in config:
-            vv('config found for: ' + name)
             self.module.config = config[name]
         if 'setup' in dir(self.module):
             self.module.setup()
@@ -166,8 +167,8 @@ class Plugin(object):
                     self.bot.pool.schedule_task(job.checker, job.function)
                 else:
                     self.jobs.append(job)
-            if self.module.crontable:
-                vv("crontable:"+ str(self.module.crontable))
+#            if self.module.crontable:
+#                vv("crontable:"+ str(self.module.crontable))
             self.module.crontable = []
         else:
             self.module.crontable = []
