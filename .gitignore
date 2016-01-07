@@ -6,3 +6,4 @@ env
 *.csv
 *.txt
 passwordfile.py
+tags

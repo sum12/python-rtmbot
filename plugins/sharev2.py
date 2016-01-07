@@ -3,39 +3,19 @@ import json
 import re
 from datetime import datetime
 from csv import DictReader, DictWriter
+
+from lib import Plugin, cron
+import logging
 outputs = []
 crontable = []
-funcs = {}
-
-
-def command(regex, outputs):
-    global funcs
-    def wrapper(func):
-        funcs.setdefault('['+regex[0]+regex[0].upper()+']'+regex[1:], (func, outputs))
-        return func
-    return wrapper
-
-
-def process_message(data):
-    global funcs
-    for regex, (fnname, outputs) in funcs.items():
-        if 'text' in data:
-            args = re.match(regex, data['text'])
-            if args:
-                ret = fnname(data, **(args.groupdict()))
-                print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
-                outputs.append([data['channel'], ret or 'Nothing'])
-                return 
-    
-
+logger = logging.getLogger('bot.share')
+logger.setLevel(logging.DEBUG)
+plgn = Plugin()
+command = lambda regex : plgn.command(regex, outputs) 
+process_message = plgn.process_message
 
     
 all = ['soumavo','bos','sumit']
-
-
-
-
-
 
 def addToTable(table, p,n):
     sp = sorted(p.items(),key=lambda (x,y):y,reverse=True)
@@ -68,7 +48,7 @@ def setup():
             wr.writeheader()
 
 
-@command('exp (?P<by>[a-z]+)( (?P<amt>-?\d+))?', outputs)
+@command('exp (?P<by>[a-z]+)( (?P<amt>-?\d+))?')
 def save(data, **details):
     if details['by'] not in all:
         return "{by} is not a memeber".format(**details)
@@ -82,7 +62,7 @@ def save(data, **details):
         wr.writerow(details)
     return '{by} spent Rs. {amt} in fuckedup plans'.format(**details)
 
-@command('closeaccount', outputs)
+@command('closeaccount')
 def close(data, **details):
     os.rename('exp.csv', 'exp'+datetime.now().strftime('%d-%h-%y,%H-%M-%S')+'.csv')
     setup() 
@@ -90,7 +70,7 @@ def close(data, **details):
         return 'Closed'
 
 
-@command('total (?P<by>[a-z]+)', outputs)
+@command('total (?P<by>[a-z]+)')
 def total(data, **details):
     if details['by'] not in all:
         return "{by} is not a memeber".format(**details)
@@ -99,7 +79,7 @@ def total(data, **details):
         return str(sum((int(d['amt']) for d in rr if d['by'] == details['by']))) 
 
 
-@command('calc', outputs)
+@command('calc')
 def calc(data):
     table=dict(zip(all,[{} for _ in all]))
     with open('exp.csv','r') as f:
