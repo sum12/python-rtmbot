@@ -137,7 +137,12 @@ class RtmBot(FileSystemEventHandler):
             except Exception, e:
                 logging.exception('error loading plugin %s' % name)
                 continue
-            self.bot_plugins.append(plg)
+            if not plg.disabled:
+#                vv("Plugin:"+plugin)
+                self.bot_plugins.append(plg)
+                plg.register_jobs()
+            else:
+                vv('Plugind Disabled %s' % plugin)
         self.reload = False
 
 class Plugin(object):
@@ -145,6 +150,7 @@ class Plugin(object):
         self.name = name
         self.jobs = []
         self.bot = bot
+        self.disabled = False
         if name in sys.modules:  
             old_module = sys.modules.pop(name)
         try:
@@ -156,6 +162,7 @@ class Plugin(object):
         self.outputs = []
         if name in config:
             self.module.config = config[name]
+            self.disabled = config[name].get('DISABLED', False)
         if 'setup' in dir(self.module):
             self.module.setup()
 
