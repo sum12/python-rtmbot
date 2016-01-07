@@ -134,8 +134,8 @@ def rename(data, **details):
         with open(orig_name,'r') as f:
             alllines = f.readlines()
         header = yaml.load("".join(alllines[header_slice]))
-        header['title'] = details['title']
+        header['title'] = str(details['title'])
         alllines[header_slice] = yaml.dump(header,default_flow_style=False).splitlines(True)
-        with open(orig_name) as f:
+        with open(orig_name, 'w') as f:
             f.writelines(alllines)
         return 'Ok'
