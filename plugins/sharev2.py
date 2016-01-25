@@ -41,7 +41,7 @@ def addToTable(table, p,n):
                         break
 
 
-def setup():
+def setup(config):
     if not os.path.exists('exp.csv'):
         with open('exp.csv', 'w') as f:
             wr = DictWriter(f, ['by', 'amt'])

@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 import time
 from lib import Plugin, cron
 import logging
-import passwordfile
 outputs = []
 crontable = []
 logger = logging.getLogger('bot.actlogin')
@@ -13,8 +12,10 @@ command = lambda regex : plgin.command(regex, outputs)
 process_message = plgn.process_message
 
 
+password = username = URL = ''
+
 crontable.append([cron(hour=[5], minute=[0], second=[0]), 'relogin'])
-def relogin(data=None, **details):
+def relogin():
     logger.info('Now Logging out')
     logout()
     logger.info('Logged Out successfully')
@@ -26,7 +27,7 @@ def relogin(data=None, **details):
     outputs.append(['random', 'Relogged in successfully'])
 
 def login():
-    resp = requests.get("http://portal.acttv.in/web/blr/home")
+    resp = requests.get(URL)
     l = resp.content
     logger.debug( "got content")
     bs = BeautifulSoup(l)
@@ -40,16 +41,17 @@ def login():
     tag = allinps[0]
     pl[tag.attrs['name']]= tag.attrs['value']
     tag =  allinps[1]
-    pl[tag.attrs['name']] = passwordfile.username
+    pl[tag.attrs['name']] = username
     tag = allinps[2]
-    pl[tag.attrs['name']] = passwordfile.password
+    pl[tag.attrs['name']] = password
     logger.debug( pl)
     s = requests.session()
     r = requests.post(url,pl)
     logger.debug( r)
 
+
 def logout():
-    resp = requests.get("http://portal.acttv.in/web/blr/home")
+    resp = requests.get(URL)
     l = resp.content
     logger.debug( "got content")
     bs = BeautifulSoup(l)
@@ -83,7 +85,7 @@ def checkAndLogin():
 
 def isLoggedOut():
     try:
-        resp = requests.get("http://portal.acttv.in/web/blr/home", timeout=10)
+        resp = requests.get(URL, timeout=10)
         l = resp.content
         logger.debug( "got content")
         bs = BeautifulSoup(l)
@@ -100,10 +102,18 @@ def isLoggedOut():
                 return False
         return True
     except requests.exceptions.ConnectionError,e:
-        pass
+        return False
+    except requests.exceptions.Timeout:
+        return False
     except Exception,e:
         logger.exception('error getting logon status')
         return False
 
         
-
+def setup(config):
+    global username
+    global password
+    global URL
+    URL = config['url']
+    username = config['username']
+    password = config['password']

@@ -161,10 +161,9 @@ class Plugin(object):
             self.disabled = True
         self.outputs = []
         if name in config:
-            self.module.config = config[name]
             self.disabled = config[name].get('DISABLED', False)
-        if 'setup' in dir(self.module):
-            self.module.setup()
+        if not self.disabled and 'setup' in dir(self.module):
+            self.module.setup(config.get(name, {}))
 
     def register_jobs(self):
         if 'crontable' in dir(self.module):

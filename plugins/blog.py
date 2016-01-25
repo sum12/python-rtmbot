@@ -5,7 +5,6 @@ from  random import randint
 from lib import *
 import yaml
 
-import re
 outputs = []
 crontable = []
 logger = logging.getLogger('bot.blog')
@@ -27,17 +26,7 @@ process_message = plgn.process_message
 datetime.strptime("01","%H")
 # http://bugs.python.org/issue7980
 
-orig_name = 'blog.txt'
-save_filepath = '/home/pi/blog/whispering-forest-1331/source/_posts/{dt}-daily-log.markdown'
 para_regex = '(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)'
-template = """---
-layout: post
-title: Daily-log
-date: {dt}
-path: '/home/pi/blog/whispering-forest-1331/source/_posts/{dt}-daily-log.markdown'
----
-"""
-header_slice = slice(1,len(template.splitlines())-2)
 
 STATES={
         'blank':'blank',
@@ -51,7 +40,13 @@ motivate=[
         'Come on, it cant be that bad to write?, Remeber when it felt, Nice?'
         ]
 
-def setup():
+def setup(config = None):
+    global save_filepath, orig_name, template, header_slice
+    save_filepath = config['save_filepath']
+    orig_name = config['orig_name' ]
+    template = config['template']
+    header_slice = slice(1,len(template.splitlines())-2)
+
     if state() == STATES['blank']:
         f=open('state','w')
         f.close()
@@ -134,8 +129,8 @@ def rename(data, **details):
         with open(orig_name,'r') as f:
             alllines = f.readlines()
         header = yaml.load("".join(alllines[header_slice]))
-        header['title'] = str(details['title'])
+        header['title'] = str(details['title']) or header['title']
         alllines[header_slice] = yaml.dump(header,default_flow_style=False).splitlines(True)
         with open(orig_name, 'w') as f:
             f.writelines(alllines)
-        return 'Ok'
+        return 'Ok, Renamed to ' + header['title']

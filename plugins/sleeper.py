@@ -38,11 +38,11 @@ def sleeper():
         count += 1
         if count >= 12: # 12*5=60secs, 1min wait before reloading
             count = 0
-            outputs.append(['random', 'diff is high, reloading'+"Should be is {calc}, ie {diff} from {curr}".format(            
-            calc = calc.strftime("%H:%M:%S"),
-            diff = diff.total_seconds(),
-            curr = curr.strftime("%H:%M:%S"),
-            )])
+#            outputs.append(['random', 'diff is high, reloading'+"Should be is {calc}, ie {diff} from {curr}".format(            
+#            calc = calc.strftime("%H:%M:%S"),
+#            diff = diff.total_seconds(),
+#            curr = curr.strftime("%H:%M:%S"),
+#            )])
             reload()
 
 
@@ -68,4 +68,4 @@ def timeit(data, **details):
             )
 
 
-outputs.append(['random','Reloaded'])
+#outputs.append(['random','Reloaded'])

@@ -11,13 +11,20 @@ command = lambda regex : plgn.command(regex, outputs)
 process_message = plgn.process_message
 
 
-URL = 'https://intense-falls-3111.herokuapp.com/daily'
+
+URL = ''
 
 @command('exe (?P<config>(\d+,)*\d+)')
 def exercise(data, **details):
+    """ Store exe related data """
     r = requests.post(URL, data={'type':'exercise', 'data':details['config']}, verify=False)
     if r.status_code == 201:
         return 'Ok'
     else:
         return 'Failed to inform the server, please try again'
+
+
+def setup(config):
+    global URL
+    URL = config['url']
 
