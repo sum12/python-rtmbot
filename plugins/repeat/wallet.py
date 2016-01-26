@@ -1,14 +1,12 @@
 import time
-crontable = []
-outputs = []
-funcs={}
+import logging
 amount = {}
 import re,getpass,os,time
 
 from lib import Plugin, cron
-logger = logging.getLogger('bot.share')
+logger = logging.getLogger('bot.wallet')
 logger.setLevel(logging.DEBUG)
-plgn = Plugin('share')
+plgn = Plugin('wallet')
 
 def making_database():
 	f = open("wallet.txt",'w')
