@@ -4,26 +4,13 @@ outputs = []
 funcs={}
 import re,youtube_dl,getpass,os
 
-def command(regex, outputs):
-    global funcs
-    def wrapper(func):
-        funcs.setdefault('['+regex[0]+regex[0].upper()+']'+regex[1:], (func, outputs))
-        return func
-    return wrapper
-
-def process_message(data):
-    global funcs
-    for regex, (fnname, outputs) in funcs.items():
-        if 'text' in data:
-            args = re.match(regex, data['text'])
-            if args:
-                ret = fnname(data, **(args.groupdict()))
-                print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
-                outputs.append([data['channel'], ret or 'Nothing'])
-                return 
+from lib import Plugin, cron
+logger = logging.getLogger('bot.share')
+logger.setLevel(logging.DEBUG)
+plgn = Plugin('share')
 
 
-@command('tell',outputs)
+@plgn.command('tell')
 def tell(data,what=None):
 	string = """Follow the following commands :
 			download (link) a
@@ -52,7 +39,7 @@ def link_downloader(link,location):
                 ydl.download([link])
         return "done"
 
-@command('download (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
+@plgn.command('download (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)')
 def download(data, what):
 	user = getpass.getuser()
 	location = '/home/'+user+'/bot_youtube_downloads/'
@@ -69,7 +56,7 @@ def download(data, what):
 	output = link_downloader(what,location)
 	return output
 
-@command('queue (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
+@plgn.command('queue (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)')
 def queue(data,what):
 	f = open('download_queue.txt','a')
 	
@@ -84,7 +71,7 @@ def queue(data,what):
 	
 	return what+ 'added to download queue'
 
-@command('begin',outputs)
+@plgn.command('begin')
 def begin(data,what = None):
 	if not os.access('download_queue.txt',os.F_OK):
 		return "Queue does not exist. Please form a download queue first."
@@ -108,7 +95,7 @@ def begin(data,what = None):
 	os.remove("download_queue.txt")
 	return "All links have been downloaded on to your Pi"
 
-@command('list all downloads',outputs)
+@plgn.command('list all downloads')
 def listings(data,what=None):
 	print "Hi"
 	user = getpass.getuser()
@@ -117,7 +104,7 @@ def listings(data,what=None):
 	print location , output
 	return output
 
-@command('ip',outputs)
+@plgn.command('ip')
 def ip(data, what=None):
 	user = getpass.getuser()
 	location = "/home/"+user+"/ip.txt"

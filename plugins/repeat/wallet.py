@@ -5,23 +5,10 @@ funcs={}
 amount = {}
 import re,getpass,os,time
 
-def command(regex, outputs):
-    global funcs
-    def wrapper(func):
-        funcs.setdefault('['+regex[0]+regex[0].upper()+']'+regex[1:], (func, outputs))
-        return func
-    return wrapper
-
-def process_message(data):
-    global funcs
-    for regex, (fnname, outputs) in funcs.items():
-        if 'text' in data:
-            args = re.match(regex, data['text'])
-            if args:
-                ret = fnname(data, **(args.groupdict()))
-                print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
-                outputs.append([data['channel'], ret or 'Nothing'])
-                return
+from lib import Plugin, cron
+logger = logging.getLogger('bot.share')
+logger.setLevel(logging.DEBUG)
+plgn = Plugin('share')
 
 def making_database():
 	f = open("wallet.txt",'w')
@@ -55,7 +42,7 @@ def accountant(marker,amount,description=" "):
 	f.write(str(final))
 	f.close()
 
-@command('wallet',outputs)
+@plgn.command('wallet')
 def wallet(data,what=None):
 	final =  """
 	Welcome to wallet ! Following are the commands and their descriptions:
@@ -72,7 +59,7 @@ def wallet(data,what=None):
 	ENJOY !!
 """
 	return final
-@command('wallet (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
+@plgn.command('wallet (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)')
 def transaction(data, what):
 	global amount
 	user = getpass.getuser()
@@ -103,7 +90,7 @@ def transaction(data, what):
 	if z[0]=='saving' or z[0] == 'savings':
                 return "Savings of Rs.%s added to your Wallet" %what
 
-@command('cash left',outputs)
+@plgn.command('cash left',outputs)
 def cash(data,what = None):
 	global amount	
 	if not os.access("wallet.txt",os.F_OK):
@@ -111,7 +98,7 @@ def cash(data,what = None):
 	reading_database()
 	return "You have Rs.%s left in your Wallet"%amount['cash']
 
-@command('savings done',outputs)
+@plgn.command('savings done')
 def savings(data,what = None):
         global amount
         if not os.access("wallet.txt",os.F_OK):
@@ -119,7 +106,7 @@ def savings(data,what = None):
         reading_database()
         return "You have done savings of Rs.%s till date"%amount['savings']
 
-@command('statement (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
+@plgn.command('statement (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)')
 def statement(data,what):
 	f = open('transaction.txt','r')
 	d = f.read()
@@ -141,7 +128,7 @@ def statement(data,what):
 				what=what-1
 		lines = final
 	return "\n".join(lines)
-@command('money (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
+@plgn.command('money (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)')
 def pay(data,what):	
 	global amount
 	user = getpass.getuser()
@@ -182,7 +169,7 @@ def pay(data,what):
 			(amount['receive'])[str(what[1])]=what[2]
 	updating_database()
 	return "NOTED !"
-@command('check (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)', outputs)
+@plgn.command('check (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)')
 def check(data,what):	
 	global amount
 	user = getpass.getuser()
