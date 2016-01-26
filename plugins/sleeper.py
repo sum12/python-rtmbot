@@ -1,21 +1,16 @@
 import datetime as dt
-import subprocess
 
 import logging
 from lib import *
-outputs = []
-crontable = []
 logger = logging.getLogger('bot.sleeper')
 logger.setLevel(logging.DEBUG)
-plgn = Plugin()
-command = lambda regex : plgn.command(regex, outputs) 
-process_message = plgn.process_message
+plgn = Plugin('sleeper')
 
 totalSleept = None
 startTime = None
 count = 0
 
-crontable.append([cron(second=range(0,60,5)), 'sleeper'])
+@plgn.schedule(cron(second=range(0,60,5)))
 def sleeper():
     global totalSleept
     global startTime
@@ -46,7 +41,7 @@ def sleeper():
             reload()
 
 
-@command('restart')
+@plgn.command('restart')
 def reload(data=None, **details):
     with open('plugins/reload.txt', 'a') as f:
         f.write(dt.datetime.now().isoformat()+'\n')
@@ -54,7 +49,7 @@ def reload(data=None, **details):
 
 
 
-@command('slept')
+@plgn.command('slept')
 def timeit(data, **details):
     global totalSleept
     global startTime

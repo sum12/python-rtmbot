@@ -153,22 +153,23 @@ class Plugin(object):
         self.disabled = False
         if name in sys.modules:  
             old_module = sys.modules.pop(name)
-        try:
-            self.module = __import__(name)
-        except Exception, e:
-            print 'Error imporrting %s' % name
-            print str(e)
-            self.disabled = True
-        self.outputs = []
         if name in config:
             self.disabled = config[name].get('DISABLED', False)
-        if not self.disabled and 'setup' in dir(self.module):
-            self.module.setup(config.get(name, {}))
+        if not self.disabled:
+            try:
+                mod = __import__(name)
+                self.module = mod.plgn
+            except Exception, e:
+                print 'Error imporrting %s' % name
+                print str(e)
+                self.disabled = True
+            else:
+                self.module.setup(config.get(name, {}))
 
     def register_jobs(self):
         if 'crontable' in dir(self.module):
             for checker, function in self.module.crontable:
-                job = Job(checker, eval('self.module.'+function))  
+                job = Job(checker, function)  
                 if job.isScheduled:
                     self.bot.pool.schedule_task(job.checker, job.function)
                 else:
@@ -281,10 +282,5 @@ if __name__ == '__main__':
     files_currently_downloading = []
     job_hash = {}
 
-    if config.has_key('DAEMON'):
-        if config['DAEMON']:
-            import daemon
-            with daemon.DaemonContext():
-                main_loop()
     main_loop()
 

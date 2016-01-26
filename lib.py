@@ -184,23 +184,55 @@ def atTime(*dt):
 
 
 class Plugin(object):
-    def __init__(self):
+    def __init__(self, name):
         self.funcs = {}
+        self.outputs = []
+        self.crontable = []
+        self.name = name 
 
-    def command(self, regex, outputs):
+        def helper(data, plugin, action):
+            """ Default Helper function """
+            ret = []
+            if plugin and plugin.lower() == self.name and action:
+               for fn,helpstr in self.funcs.values():
+                   if helpstr == action and fn != helper:
+                       ret.append(fn.__doc__ or 'Nope')
+            elif plugin and plugin.lower() == self.name:
+                ret = [helpstr for (_, helpstr) in self.funcs.values()]
+            elif not plugin:
+                ret = [self.name]
+            return '\n'.join(ret)
+
+        self.funcs.setdefault('[Hh]elp( (?P<plugin>\w+)( (?P<action>\w+))?)?', (helper, 'help'))
+
+    def setup(self, config=None):
+        pass
+
+    def setupmethod(self, func):
+        def wrapper(config=None):
+            func(config)
+        self.setup = wrapper 
+        return wrapper
+
+    def command(self, regex, help=''):
         def wrapper(func):
-            self.funcs.setdefault('['+regex[0]+regex[0].upper()+']'+regex[1:], (func, outputs))
+            rx ='['+regex[0]+regex[0].upper()+']'+regex[1:] 
+            self.funcs.setdefault(rx , (func, help or regex.split()[0] ))
             return func
         return wrapper
 
-
     def process_message(self, data):
-        for regex, (fnname, outputs) in self.funcs.items():
+        for regex, (fn, _) in self.funcs.items():
             if 'text' in data:
                 args = re.match(regex, data['text'])
                 if args:
-                    ret = fnname(data, **(args.groupdict()))
+                    ret = fn(data, **(args.groupdict()))
     #                print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
-                    outputs.append([data['channel'], ret or 'Nothing'])
-                    return 
+                    if ret:
+                        self.outputs.append([data['channel'], ret ])
 
+    def schedule(self, schfunc):
+        def wrapper(func):
+            self.crontable.append([schfunc, func])
+            return func
+        return wrapper

@@ -1,20 +1,18 @@
 import requests
-from bs4 import BeautifulSoup
 import time
-from lib import Plugin, cron
 import logging
-outputs = []
-crontable = []
+from bs4 import BeautifulSoup
+from lib import Plugin, cron
+
+
 logger = logging.getLogger('bot.actlogin')
 logger.setLevel(logging.DEBUG)
-plgn = Plugin()
-command = lambda regex : plgin.command(regex, outputs) 
-process_message = plgn.process_message
+plgn = Plugin('actlogin')
 
 
 password = username = URL = ''
 
-crontable.append([cron(hour=[5], minute=[0], second=[0]), 'relogin'])
+@plgn.schedule(cron(hour=[5], minute=[0], second=[0]))
 def relogin():
     logger.info('Now Logging out')
     logout()
@@ -71,7 +69,7 @@ def logout():
 
 # this is the default cron, that executes every 120 sec.
 # it is executed my main thread directly
-crontable.append([ cron(minute=range(0,60,5),second=[0]), 'checkAndLogin' ])
+@plgn.schedule(cron(minute=range(0,60,5),second=[0]))
 def checkAndLogin():
     if isLoggedOut():
         try:
@@ -109,8 +107,8 @@ def isLoggedOut():
         logger.exception('error getting logon status')
         return False
 
-        
-def setup(config):
+@plgn.setupmethod
+def init(config):
     global username
     global password
     global URL

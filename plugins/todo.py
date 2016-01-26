@@ -1,25 +1,17 @@
 import os
 import pickle
-import re
 from lib import Plugin
 import logging
-outputs = []
-crontable = []
 logger = logging.getLogger('bot.todo')
-plgn = Plugin()
-command = lambda regex : plgn.command(regex, outputs) 
-process_message = plgn.process_message
+plgn = Plugin('todo')
 
-
-
-    
 tasks = {}
 
 FILE="todo.data"
 if os.path.isfile(FILE):
     tasks = pickle.load(open(FILE, 'rb'))
 
-@command('tasks|fin|done|show|todo')
+@plgn.command('tasks|fin|done|show|todo')
 def todo(data, **args):
     global tasks
     channel = data["channel"]

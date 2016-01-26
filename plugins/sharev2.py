@@ -1,19 +1,13 @@
 import os
 import json
-import re
 from datetime import datetime
 from csv import DictReader, DictWriter
+import logging
 
 from lib import Plugin, cron
-import logging
-outputs = []
-crontable = []
 logger = logging.getLogger('bot.share')
 logger.setLevel(logging.DEBUG)
-plgn = Plugin()
-command = lambda regex : plgn.command(regex, outputs) 
-process_message = plgn.process_message
-
+plgn = Plugin('share')
     
 all = ['soumavo','bos','sumit']
 
@@ -40,15 +34,15 @@ def addToTable(table, p,n):
                         #print '%s gives %s  Rs. %d, remaining %d'%(name,otherName,toGive,sp[j][1])
                         break
 
-
-def setup(config):
+@plgn.setupmethod
+def init(config):
     if not os.path.exists('exp.csv'):
         with open('exp.csv', 'w') as f:
             wr = DictWriter(f, ['by', 'amt'])
             wr.writeheader()
 
 
-@command('exp (?P<by>[a-z]+)( (?P<amt>-?\d+))?')
+@plgn.command('exp (?P<by>[a-z]+)( (?P<amt>-?\d+))?')
 def save(data, **details):
     if details['by'] not in all:
         return "{by} is not a memeber".format(**details)
@@ -62,15 +56,15 @@ def save(data, **details):
         wr.writerow(details)
     return '{by} spent Rs. {amt} in fuckedup plans'.format(**details)
 
-@command('closeaccount')
+@plgn.command('closeaccount')
 def close(data, **details):
     os.rename('exp.csv', 'exp'+datetime.now().strftime('%d-%h-%y,%H-%M-%S')+'.csv')
-    setup() 
+    init({}) 
     if os.path.exists('exp.csv'):
         return 'Closed'
 
 
-@command('total (?P<by>[a-z]+)')
+@plgn.command('total (?P<by>[a-z]+)')
 def total(data, **details):
     if details['by'] not in all:
         return "{by} is not a memeber".format(**details)
@@ -79,7 +73,7 @@ def total(data, **details):
         return str(sum((int(d['amt']) for d in rr if d['by'] == details['by']))) 
 
 
-@command('calc')
+@plgn.command('calc')
 def calc(data):
     table=dict(zip(all,[{} for _ in all]))
     with open('exp.csv','r') as f:

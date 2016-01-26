@@ -5,12 +5,8 @@ from  random import randint
 from lib import *
 import yaml
 
-outputs = []
-crontable = []
 logger = logging.getLogger('bot.blog')
-plgn = Plugin()
-command = lambda regex : plgn.command(regex, outputs) 
-process_message = plgn.process_message
+plgn = Plugin('blog')
 
 # This is testcode for threadpool.py
 # counter = 0
@@ -40,7 +36,8 @@ motivate=[
         'Come on, it cant be that bad to write?, Remeber when it felt, Nice?'
         ]
 
-def setup(config = None):
+@plgn.setupmethod
+def init(config):
     global save_filepath, orig_name, template, header_slice
     save_filepath = config['save_filepath']
     orig_name = config['orig_name' ]
@@ -53,7 +50,7 @@ def setup(config = None):
         with open(orig_name,'w') as f:
             f.write(template.format(dt=datetime.now().strftime('%Y-%m-%d')))
 
-@command('blog '+ para_regex)
+@plgn.command('blog '+ para_regex)
 def blogging(data, **details):
     fs = '`{dt}`: {what}\n\n\n'.format(dt=datetime.now().strftime('%H-%M'), what=details['what'])
     ret = ''
@@ -84,10 +81,8 @@ def state(now=''):
 
 
 
-crontable.append([cron(
-        hour=[23]
-    ),'save'])
-@command('saveblog')
+@plgn.schedule(cron(hour=[23]))
+@plgn.command('saveblog')
 def save(data=None, **details):                    # Crontasks are called without any arguments,
     if state() == STATES['started']:
         new_name=save_filepath.format(dt=datetime.now().strftime('%Y-%m-%d'))
@@ -104,11 +99,11 @@ def save(data=None, **details):                    # Crontasks are called withou
 # range has only part 0-59, when the range is exhusted, it will raise a stopiteration
 # causing the function to reinitialize, once the next bit has toggeled.
 
-crontable.append([cron(
+@plgn.schedule(cron(
     second = rr(range(0,60,59)),
     minute = rr(range(0,60,59)),    
     hour = rr(range(8,24,3)),       
-    ),'ask'])
+    ))
 def ask():
     if state() in (STATES['started'], STATES['blank']):
         m = len(motivate)
@@ -116,13 +111,13 @@ def ask():
 
 
 
-#crontable.append([cron(second=(range(0,60))), 'timeit'])
+#plgn.schedule(cron(second=(range(0,60))))
 #def timeit(data=None, **details):
 #    print "timeit", str(datetime.now().ctime())
 #    outputs.append(['debug', str(datetime.now())])
 
 
-@command('rename (?P<title>[a-zA-Z0-9!@#$%^&*() {}:?"<>]+)')
+@plgn.command('rename (?P<title>[a-zA-Z0-9!@#$%^&*() {}:?"<>]+)')
 def rename(data, **details):
     if state() == STATES['started']:
         alllines = None
