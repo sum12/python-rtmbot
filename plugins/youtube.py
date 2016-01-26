@@ -5,9 +5,9 @@ funcs={}
 import re,youtube_dl,getpass,os
 
 from lib import Plugin, cron
-logger = logging.getLogger('bot.share')
+logger = logging.getLogger('bot.youtube')
 logger.setLevel(logging.DEBUG)
-plgn = Plugin('share')
+plgn = Plugin('youtube')
 
 
 @plgn.command('tell')
