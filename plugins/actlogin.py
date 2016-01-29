@@ -22,7 +22,7 @@ def relogin():
     login()
     logger.info('Logged in successfully')
 
-    outputs.append(['random', 'Relogged in successfully'])
+    plgn.outputs.append(['random', 'Relogged in successfully'])
 
 def login():
     resp = requests.get(URL)
@@ -76,9 +76,9 @@ def checkAndLogin():
             login()
         except Exception, e:
             logger.exception('Error in logging in')
-            outputs.append(['random', 'Currently logged out, will try to login'])
+            plgn.outputs.append(['random', 'Currently logged out, will try to login'])
         else:
-            outputs.append(['random', 'Had to relogin'])
+            plgn.outputs.append(['random', 'Had to relogin'])
 
 
 def isLoggedOut():
