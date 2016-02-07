@@ -87,11 +87,11 @@ def save(data=None, **details):                    # Crontasks are called withou
     if state() == STATES['started']:
         new_name=save_filepath.format(dt=datetime.now().strftime('%Y-%m-%d'))
         if os.path.exists(new_name):
-            outputs.append(['blog', "Cant Save, a file already exists"])
+            plgn.outputs.append(['blog', "Cant Save, a file already exists"])
             return
         os.rename(orig_name, new_name)
         with open('state','w') as sf:
-            outputs.append(['blog', "Saved and Reloaded"])
+            plgn.outputs.append(['blog', "Saved and Reloaded"])
 
 
 # DOC(sumitj) 
@@ -107,14 +107,14 @@ def save(data=None, **details):                    # Crontasks are called withou
 def ask():
     if state() in (STATES['started'], STATES['blank']):
         m = len(motivate)
-        outputs.append(['blog',motivate[randint(1, m*10) % m]])
+        plgn.outputs.append(['blog',motivate[randint(1, m*10) % m]])
 
 
 
 #plgn.schedule(cron(second=(range(0,60))))
 #def timeit(data=None, **details):
 #    print "timeit", str(datetime.now().ctime())
-#    outputs.append(['debug', str(datetime.now())])
+#    plgn.outputs.append(['debug', str(datetime.now())])
 
 
 @plgn.command('rename (?P<title>[a-zA-Z0-9!@#$%^&*() {}:?"<>]+)')
