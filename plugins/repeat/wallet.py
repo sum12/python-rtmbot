@@ -40,7 +40,7 @@ def accountant(marker,amount,description=" "):
 	f.write(str(final))
 	f.close()
 
-@plgn.command('wallet')
+@plgn.command('wallet\Z')
 def wallet(data,what=None):
 	final =  """
 	Welcome to wallet ! Following are the commands and their descriptions:
@@ -88,7 +88,7 @@ def transaction(data, what):
 	if z[0]=='saving' or z[0] == 'savings':
                 return "Savings of Rs.%s added to your Wallet" %what
 
-@plgn.command('cash left',outputs)
+@plgn.command('cash left')
 def cash(data,what = None):
 	global amount	
 	if not os.access("wallet.txt",os.F_OK):
