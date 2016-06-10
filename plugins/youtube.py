@@ -20,6 +20,13 @@ destination = '/home'+user+'/bot_downloads'
 def shifting_downloads():
     global location_d,destination
     os.rename(location_d+'*',destination)
+def informing_downloaded():
+    global location_d
+
+@plgn('list')
+def temp(data, what = None):
+    global location
+    return str(os.listdir(location))
 @plgn.command('tell')
 def tell(data,what=None):
 	string = """Follow the following commands :
@@ -48,7 +55,7 @@ def link_downloader(link):
 	with youtube_dl.YoutubeDL(y) as ydl:
                 ydl.download([link])
         logger.debug("Done till here")
-        subprocess.call('moving_downloads.sh',shell=True)
+  #      subprocess.call('moving_downloads.sh',shell=True)
   #      shifting_downloads()
         return "done"
 
