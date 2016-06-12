@@ -78,7 +78,7 @@ def checkAndLogin():
             logger.exception('Error in logging in')
             plgn.outputs.append(['random', 'Currently logged out, will try to login'])
         else:
-            plgn.outputs.append(['random', 'Had to relogin'])
+            plgn.outputs.append(['random', 'Had     to    relogin'])
 
 
 def isLoggedOut():
