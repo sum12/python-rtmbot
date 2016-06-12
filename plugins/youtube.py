@@ -33,16 +33,18 @@ def tell(data,what=None):
 
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
 def link_downloader(link):
-        y = {'outtmpl':location_video,'logger':logger,'nooverwrites':'True'}
-        x = link.split(" ")
+        y = {'outtmpl':location_video,'logger':logger,'nooverwrites':'True','simulate':'False'}
+        x  = link.split(" ")
 	if len(x)>1 and x[1] == 'a':
             y = {'outtmpl':location_video, 'logger':logger,'nooverwrites':'True','format': 'bestaudio/best','postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192',}]}
 	link = str(x[0])
         ydl= youtube_dl.YoutubeDL(y)
         try:
             ydl.download([link])
+            return 1
         except Exception as e:
             logger.debug(e)
+            return e
 
 
 @plgn.command('download <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)>')
@@ -51,9 +53,11 @@ def download(data, what):
         if not os.access(location,os.F_OK):
 		os.mkdir(location)
         old=os.listdir(location)
-	link_downloader(what)
+	output=link_downloader(what)
         new = os.listdir(location)
         final = [i for i in new if i not in old]
+        if output != 1:
+            return output
 	return "Done downloading "+ "\n" +"\n".join(final)
 
 @plgn.command('queue <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)>')
@@ -75,14 +79,19 @@ def begin(data,what = None):
 	data=data[:-1]
 	#count = len(data)
         old=os.listdir(location)
+        output=[]
 	for link in data:		
 		if not link==" " or not link == "":
-                    link_downloader(link)
+                    output.append(link_downloader(link))
          #           count = count - 1
 	os.remove("download_queue.txt")
         new = os.listdir(location)
         final = [i for i in new if i not in old]
-        return "Done downloading "+ "\n" +"\n".join(final)
+        error = [i for i in output if i!=1]
+        if len(error)==0:
+            return "Done downloading "+ "\n" +"\n".join(final)
+        else:
+            return "Following errors were reccorded for this queue"+"\n"+"\n".join(error) +"\n" + "Done downloading \n" + "\n".join(final) 
 
 @plgn.command('list all downloads')
 def listings(data,what=None):
