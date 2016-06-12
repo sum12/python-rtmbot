@@ -33,7 +33,7 @@ def tell(data,what=None):
 
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
 def link_downloader(link):
-        y = {'outtmpl':location_video,'logger':logger,'nooverwrites':'True','simulate':'False'}
+        y = {'outtmpl':location_video,'logger':logger,'nooverwrites':'True'}
         x  = link.split(" ")
 	if len(x)>1 and x[1] == 'a':
             y = {'outtmpl':location_video, 'logger':logger,'nooverwrites':'True','format': 'bestaudio/best','postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192',}]}
