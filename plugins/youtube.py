@@ -7,22 +7,16 @@ logger = logging.getLogger('bot.youtube')
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('youtube')
 
-#making global variable for directory location
-#destination is folder shared on btsync
-#due to write priviedge restriction location_d is used
-#location is modified version of location_d which is compatible with youtube-dl
-user = getpass.getuser()
-location_d = '/home/'+user+'/bot_youtube_downloads/'
-location = location_d + '%(title)s.%(ext)s'
+location = '/home/'+'pi'+'/bot_youtube_downloads/'
 location = unicode(location)
-destination = '/home'+user+'/bot_downloads'
+location_video = location +'%(title)s.%(ext)s'
 
-def shifting_downloads():
-    global location_d,destination
-    os.rename(location_d+'*',destination)
+queued_links = 'download_queue.txt'
+
+old,new = [],[]
 @plgn.command('tell')
 def tell(data,what=None):
-	string = """Follow the following commands :
+        string = """Follow the following commands :
 			download (link) a
 				This function lets you download a video or audio directly. 
 				'a' is optional parameter for downloading the audio file.
@@ -39,82 +33,60 @@ def tell(data,what=None):
 
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
 def link_downloader(link):
-        global location_d,destination,location
-        y = {'outtmpl':location,'nooverwrites':'True'}
+        y = {'outtmpl':location_video,'logger':logger,'nooverwrites':'True'}
         x = link.split(" ")
 	if len(x)>1 and x[1] == 'a':
-                y = {'outtmpl':location,'nooverwrites':'True','format': 'bestaudio/best','postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192',}]}
-       		link = str(x[0])
-	with youtube_dl.YoutubeDL(y) as ydl:
-                ydl.download([link])
-        logger.debug("Done till here")
-        subprocess.call('moving_downloads.sh',shell=True)
-  #      shifting_downloads()
-        return "done"
+            y = {'outtmpl':location_video, 'logger':logger,'nooverwrites':'True','format': 'bestaudio/best','postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192',}]}
+	link = str(x[0])
+        ydl= youtube_dl.YoutubeDL(y)
+        try:
+            ydl.download([link])
+        except Exception as e:
+            logger.debug(e)
 
-@plgn.command('download (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)')
+
+@plgn.command('download <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)>')
 def download(data, what):
-        global location_d
-#	user = getpass.getuser()
-	if not os.access(location_d,os.F_OK):
-		os.mkdir(location_d)
-	l = list(what)
-	l.remove('>')
-	l.remove('<')
-	what = "".join(l)
+	global old,new
+        if not os.access(location,os.F_OK):
+		os.mkdir(location)
+        old=os.listdir(location)
+	link_downloader(what)
+        new = os.listdir(location)
+        final = [i for i in new if i not in old]
+	return "Done downloading "+ "\n" +"\n".join(final)
 
-#	location = '/home/'+user+'/bot_youtube_downloads/'
-#	location = location + '%(title)s.%(ext)s'
-#	location = unicode(location)
-	
-	output = link_downloader(what)
-	return output
-
-@plgn.command('queue (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)')
+@plgn.command('queue <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)>')
 def queue(data,what):
 	f = open('download_queue.txt','a')
-	
-	l = list(what)
-	l.remove('>')
-	l.remove('<')
-	what = "".join(l)
-	
-	f.write(what)
-	f.write('\n')
-	f.close()
+        with open(queued_links,'a') as f:
+                f.write(what)
 	return what+ 'added to download queue'
 
 @plgn.command('begin')
 def begin(data,what = None):
-        global location_d,destination,location
-	if not os.access('download_queue.txt',os.F_OK):
+	if not os.access(queued_links,os.F_OK):
 		return "Queue does not exist. Please form a download queue first."
-	f = open('download_queue.txt','r+')
-	links = f.read()
-	f.close()
-#	user = getpass.getuser()
-#	location = '/home/'+user+'/bot_youtube_downloads/'
-        if not os.access(location_d,os.F_OK):
-                os.mkdir(location_d)
-#	location = location + '%(title)s.%(ext)s'
-#       location = unicode(location)
+        with open(queued_links,'r+') as f:
+                links = f.read()
+        if not os.access(location,os.F_OK):
+                os.mkdir(location)
 	data = links.split("\n")
 	data=data[:-1]
-	count = len(data)
+	#count = len(data)
+        old=os.listdir(location)
 	for link in data:		
-		print str(count) + " videos/audios are to yet be downloaded"
 		if not link==" " or not link == "":
-			link_downloader(link)
-		count = count - 1
+                    link_downloader(link)
+         #           count = count - 1
 	os.remove("download_queue.txt")
-	return "All links have been downloaded on to your Pi"
+        new = os.listdir(location)
+        final = [i for i in new if i not in old]
+        return "Done downloading "+ "\n" +"\n".join(final)
 
 @plgn.command('list all downloads')
 def listings(data,what=None):
-        global destination
-#        user = getpass.getuser()
-#	location = '/home/'+user+'/bot_downloads/'
-	output = "\n".join(os.listdir(destination))
+	output = "\n".join(os.listdir(location))
 	return output
 
 @plgn.command('ip')
