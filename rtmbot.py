@@ -186,11 +186,12 @@ class Plugin(object):
             if debug:
                 try:
                     vvvv('calling %s'%function_name)
-                    eval('self.module.'+function_name)(data)
+                    self.bot.pool.add_task(getattr(self.module, function_name), data)
+                    #eval('self.module.'+function_name)(data)
                 except Exception, e:
                     logging.exception('problem in module {} {}'.format(function_name, data))
             else:
-                eval('self.module.'+function_name)(data)
+                self.bot.pool.add_task(getattr(self.module, function_name), data)
         if 'catch_all' in dir(self.module):
             try:
                 self.module.catch_all(data)
