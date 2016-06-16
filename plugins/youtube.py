@@ -96,7 +96,7 @@ def begin(data,what = None):
     if len(error)==0:
         msg = "Done downloading \n {0}".format("\n".join(final))
     else:
-        msg = "\n".joing(["Following errors were reccorded for this queue",
+        msg = "\n".join(["Following errors were reccorded for this queue",
                             "\n".join(error),
                             "Done downloading",
                             "\n".join(final)])
