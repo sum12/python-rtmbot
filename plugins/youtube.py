@@ -113,7 +113,7 @@ def init(config)
     plgn.location = unicode(config['location'])
     plgn.location_video = os.sep.join(plgn.location + config['outtmpl'])
     plgn.queued_links = config['queue_file']
-    plgn.playlists = open(config['playlists']).read().split('/n')
+    #plgn.playlists o= open(config['playlists']).read().split('/n')
     plgn.old = []
     plgn.new = []
 
