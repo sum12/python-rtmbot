@@ -12,19 +12,19 @@ plgn = Plugin('youtube')
 @plgn.command('tell')
 def tell(data,what=None):
         string = """Follow the following commands :
-			download (link) a
-				This function lets you download a video or audio directly. 
-				'a' is optional parameter for downloading the audio file.
-			queue (link) 
-				This function appends the link to the download queue. Pass 'a' to download the audio.
-			begin 
-				This initiates the download of the queue.
-			list all downloads
-				This function will simply return all the items that are present in the downloads directory on raspberry pi.
-			ip
-				This will return the ip of DJPI. 
-		"""		
-	return string
+            download (link) a
+                This function lets you download a video or audio directly. 
+                'a' is optional parameter for downloading the audio file.
+            queue (link) 
+                This function appends the link to the download queue. Pass 'a' to download the audio.
+            begin 
+                This initiates the download of the queue.
+            list all downloads
+                This function will simply return all the items that are present in the downloads directory on raspberry pi.
+            ip
+                This will return the ip of DJPI. 
+        """     
+    return string
 
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
 def link_downloader(link):
