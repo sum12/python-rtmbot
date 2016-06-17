@@ -86,6 +86,15 @@ def queue(data,what,param):
         f.write(',')
     return '{0} added to download queue'.format(str(what))
 
+
+@plgn.command('^(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?.*?(?:list)=(?P<playid>.*?)(?:&|$)')
+def saveplaylist(data, playid):
+   open(plg.playlistsfile,'a').write('\n%s'.format(playid))
+   return 'Saved playid {0}'.format(playid)
+
+#def continueplaylist():
+#    link_downloader
+
 @plgn.command('begin')
 def begin(data,what = None):
     if not os.access(plgn.queued_links,os.F_OK):
@@ -180,7 +189,7 @@ def init(config):
     plgn.location = unicode(config['location'])
     plgn.location_video = plgn.location + config['outtmpl']
     plgn.queued_links = config['queue_file']
-    #plgn.playlists o= open(config['playlists']).read().split('/n')
+    plgn.playlistsfile = config.get('playlistsfile', 'playlists.txt')
     plgn.old = []
     plgn.new = []
 
