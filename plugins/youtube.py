@@ -11,7 +11,7 @@ plgn = Plugin('youtube')
 
 @plgn.command('tell')
 def tell(data,what=None):
-        string = """Follow the following commands :
+    string = """Follow the following commands :
             download (link) a
                 This function lets you download a video or audio directly. 
                 'a' is optional parameter for downloading the audio file.
@@ -109,7 +109,7 @@ def listings(data,what=None):
 
 
 @plgn.setupmethod
-def init(config)
+def init(config):
     plgn.location = unicode(config['location'])
     plgn.location_video = os.sep.join(plgn.location + config['outtmpl'])
     plgn.queued_links = config['queue_file']
