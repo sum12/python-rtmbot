@@ -46,9 +46,9 @@ def link_downloader(link):
     ydl= youtube_dl.YoutubeDL(y)
     try:
         ydl.download([link])
-        return 1
+        return '1'
     except Exception as e:
-        logger.debug(e)
+        logger.debug(str(e))
         return e
 
 
@@ -60,14 +60,15 @@ def download(data, what):
     output=link_downloader(what)
     plgn.new = os.listdir(plgn.location)
     final = [i for i in plgn.new if i not in plgn.old]
-    if output != 1:
-        return output
+    if output != '1':
+        return str(output)
     return "Done downloading "+ "\n" +"\n".join(final)
 
 @plgn.command('queue <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)>')
 def queue(data,what):
     with open(plgn.queued_links,'a') as f:
         f.write(what)
+        f.write('\n')
     return '{0} added to download queue'.format(what)
 
 @plgn.command('begin')
@@ -111,7 +112,7 @@ def listings(data,what=None):
 @plgn.setupmethod
 def init(config):
     plgn.location = unicode(config['location'])
-    plgn.location_video = os.sep.join(plgn.location + config['outtmpl'])
+    plgn.location_video = plgn.location + config['outtmpl']
     plgn.queued_links = config['queue_file']
     #plgn.playlists o= open(config['playlists']).read().split('/n')
     plgn.old = []
