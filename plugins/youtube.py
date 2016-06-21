@@ -27,14 +27,14 @@ def tell(data,what=None):
     return string
 
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
-def link_downloader(link):
+def link_downloader(*a):
+    args = [str(i) for i in a]
     y = {
             'outtmpl':plgn.location_video,
             'logger':logger,
             'nooverwrites':'True'
     }
-    x  = link.split(" ")
-    if len(x)>1 and x[1] == 'a':
+    if len(args)>1 and (args[1] == 'a' or args[1]=='A'):
         y.update({
                 'format': 'bestaudio/best',
                 'postprocessors': [{
@@ -42,7 +42,7 @@ def link_downloader(link):
                     'preferredcodec': 'mp3',
                     'preferredquality': '192',}]
                 })
-    link = str(x[0])
+    link = str(args[0])
     ydl= youtube_dl.YoutubeDL(y)
     try:
         ydl.download([link])
@@ -52,24 +52,25 @@ def link_downloader(link):
         return e
 
 
-@plgn.command('download <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)>')
-def download(data, what):
+@plgn.command('download <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
+def download(data, what,param):
     if not os.access(plgn.location,os.F_OK):
         os.mkdir(plgn.location)
     plgn.old=os.listdir(plgn.location)
-    output=link_downloader(what)
+    output=link_downloader(what,param)
     plgn.new = os.listdir(plgn.location)
     final = [i for i in plgn.new if i not in plgn.old]
     if output != '1':
         return str(output)
     return "Done downloading "+ "\n" +"\n".join(final)
 
-@plgn.command('queue <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)>')
-def queue(data,what):
+@plgn.command('queue <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
+def queue(data,what,param):
+    final = str(what) + " " + str(param)
     with open(plgn.queued_links,'a') as f:
-        f.write(what)
+        f.write(final)
         f.write('\n')
-    return '{0} added to download queue'.format(what)
+    return '{0} added to download queue'.format(str(what))
 
 @plgn.command('begin')
 def begin(data,what = None):
