@@ -126,4 +126,12 @@ def ip(data, what=None):
     data = f.read()
     f.close()       
     return data
-
+@plgn.command('memory')
+def memory(data,what=None):
+    proc = subprocess.Popen(['df','-h'],stdout = subprocess.PIPE)
+    temp = (proc.communicate()[0])
+    data = temp.split("\n")
+    for line in data:
+        if '/dev/root' in line:
+            final = line
+    return str(final)
