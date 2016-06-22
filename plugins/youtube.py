@@ -91,13 +91,15 @@ def begin(data,what = None):
     plgn.new = os.listdir(plgn.location)
     final = set(plgn.new) - set(plgn.old) 
     errors = ['Link = '+str(i) + '\n' + 'Error = '+str(j) for i,j in output if j!='1' ]
-    if len(error)==0:
+    if len(errors)==0:
         msg = "Done downloading \n {0}".format("\n".join(final))
-    else:
+    elif len(final)>0:
         msg = "\n".join(["Following errors were reccorded for this queue",
-                            "\n".join(error),
+                            "\n".join(errors),
                             "Done downloading",
                             "\n".join(final)])
+    else:
+        msg = "\n".join(["Following errors were recorded for the given queue","\n".join(errors)])
     return msg
 
 @plgn.command('list all downloads')
