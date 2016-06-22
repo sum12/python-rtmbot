@@ -1,13 +1,10 @@
 import time,os,subprocess
 import logging
 import re,youtube_dl,getpass,os
-
 from lib import Plugin, cron
 logger = logging.getLogger('bot.youtube')
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('youtube')
-
-
 
 @plgn.command('tell')
 def tell(data,what=None):
@@ -49,7 +46,7 @@ def link_downloader(*a):
         return '1'
     except Exception as e:
         logger.debug(str(e))
-        return e
+        return str(e)
 
 
 @plgn.command('download <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
@@ -82,19 +79,18 @@ def begin(data,what = None):
         os.mkdir(plgn.location)
     data = links.split("\n")
     data = data[:-1]
-    #count = len(data)
     plgn.old=os.listdir(plgn.location)
     output=[]
     for link in data:       
         if not link==" " or not link == "":
-            output.append(link_downloader(link))
-         #           count = count - 1
+            r = link_downloader(link)
+           #logger.debug(link)
+           #logger.debug(r)
+            output.append((link,r))
     os.remove(plgn.queued_links)
     plgn.new = os.listdir(plgn.location)
-    # final = set(plgn.new) - set(plgn.old) ??????
-    final = [i for i in plgn.new if i not in plgn.old]
-    # error = filter(lambda x:x!=, output)  ??????
-    error = [i for i in output if i!=1]
+    final = set(plgn.new) - set(plgn.old) 
+    errors = ['Link = '+str(i) + '\n' + 'Error = '+str(j) for i,j in output if j!='1' ]
     if len(error)==0:
         msg = "Done downloading \n {0}".format("\n".join(final))
     else:
