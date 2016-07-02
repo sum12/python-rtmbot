@@ -158,7 +158,10 @@ def remove(data,what):
 
 @plgn.command('list all downloads')
 def listings(data,what=None):
-    output = "\n".join(os.listdir(plgn.location))
+    files =os.listdir(plgn.location)
+    output = "No downloads"
+    if not files == []:
+        output = "\n".join(os.listdir(plgn.location))
     return output
 
 
