@@ -29,6 +29,12 @@ def tell(data,what=None):
         """     
     return string
 
+class DownloadException(Exception):
+ def __init__(self, msg, exc_info=None):
+        """ exc_info, if given, is the original exception that caused the trouble (as returned by sys.exc_info()). """
+        super(DownloadError, self).__init__(msg)
+        self.exc_info = exc_info
+
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
 def link_downloader(*a):
     args = [str(i) for i in a]
@@ -49,10 +55,10 @@ def link_downloader(*a):
     ydl= youtube_dl.YoutubeDL(y)
     try:
         ydl.download([link])
-        return '1'
     except Exception as e:
         logger.debug(str(e))
-        return str(e)
+        exc_info = sys.exc_info()
+        raise DownloadException(str(e),exc_info)
 
 
 @plgn.command('download <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
@@ -60,11 +66,12 @@ def download(data, what,param):
     if not os.access(plgn.location,os.F_OK):
         os.mkdir(plgn.location)
     plgn.old=os.listdir(plgn.location)
-    output=link_downloader(what,param)
+    try:
+        link_downloader(what,param)
+    except DownloadException as e:
+        return  str(e.msg)
     plgn.new = os.listdir(plgn.location)
     final = [i for i in plgn.new if i not in plgn.old]
-    if output != '1':
-        return str(output)
     return "Done downloading "+ "\n" +"\n".join(final)
 
 @plgn.command('queue add <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
@@ -92,10 +99,12 @@ def begin(data,what = None):
     output=[]
     for link in data:       
         if not link==" " or not link == "":
-            r = link_downloader(link)
-            output.append((link,r))
-            if r=='1':
+            try:
+                link_downloader(link)
+                output.append((link,'1'))
                 data.remove(link)
+            except DownloadException as e:
+                outputs.append((link,str(e)))
     if data == []:            
         os.remove(plgn.queued_links)
     else:
