@@ -112,8 +112,11 @@ def continueplaylist(*args, **kwargs):
     playids = [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i ]
     logger.debug(playids)
     for i in  playids:
-        logger.debug('starting for id->' + i)
-        link_downloader(i, *'ak')
+        try:
+            logger.debug('starting for id->' + i)
+            link_downloader(i, *'ak')
+        except:
+            pass
             
 
 
@@ -208,6 +211,7 @@ def listings(data,what=None):
 
 
 @plgn.setupmethod
+<<<<<<< HEAD
 def init(config=None):
     if config is not None:  # Anything except None will let you in.
         plgn.location = unicode(config['location'])
@@ -216,6 +220,15 @@ def init(config=None):
         plgn.playlistsfile = config.get('playlistsfile', 'playlists.txt')
         if not os.path.exists(plgn.playlistsfile):
             open(plgn.playlistsfile,'w')
+=======
+def init(config):
+    plgn.location = unicode(config.get('location', '.'))
+    plgn.location_video = os.sep.join(plgn.location + config['outtmpl'])
+    plgn.queued_links = config.get('queue_file', 'queue.txt')
+    plgn.playlistsfile = config.get('playlistsfile', 'playlists.txt')
+    if not os.path.exists(plgn.playlistsfile):
+        open(plgn.playlistsfile,'w')
+>>>>>>> [youtube] download playlist.
     plgn.old = []
     plgn.new = []
 
