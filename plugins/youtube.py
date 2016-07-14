@@ -89,7 +89,7 @@ def queue(data,what,param):
 
 @plgn.command('^(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?.*?(?:list)=(?P<playid>.*?)(?:&|$)')
 def saveplaylist(data, playid):
-   open(plg.playlistsfile,'a').write('\n%s'.format(playid))
+   open(plgn.playlistsfile,'a').write('\n%s'.format(playid))
    return 'Saved playid {0}'.format(playid)
 
 #def continueplaylist():
@@ -186,9 +186,9 @@ def listings(data,what=None):
 
 @plgn.setupmethod
 def init(config):
-    plgn.location = unicode(config['location'])
-    plgn.location_video = plgn.location + config['outtmpl']
-    plgn.queued_links = config['queue_file']
+    plgn.location = unicode(config.get('location', '.'))
+    plgn.location_video = os.sep.join(plgn.location + config['outtmpl'])
+    plgn.queued_links = config.get('queue_file', 'queue.txt')
     plgn.playlistsfile = config.get('playlistsfile', 'playlists.txt')
     plgn.old = []
     plgn.new = []
