@@ -89,11 +89,21 @@ def queue(data,what,param):
 
 @plgn.command('^(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?.*?(?:list)=(?P<playid>.*?)(?:&|$)')
 def saveplaylist(data, playid):
-   open(plgn.playlistsfile,'a').write('\n%s'.format(playid))
-   return 'Saved playid {0}'.format(playid)
+    if playid in  [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i != None]:
+        return 'playid {0} exists'.format(playid)
+    open(plgn.playlistsfile,'a').write('\n{0}'.format(playid))
+    return 'Saved playid {0}'.format(playid)
 
-#def continueplaylist():
-#    link_downloader
+@plgn.schedule(cron(hour=range(2,6)+range(10,18), minute=0,second=0))
+def continueplaylist():
+    playids = [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i ]
+    for i in  playids:
+        try:
+            link_downloader(i, 'a')
+        except:
+            pass
+
+
 
 @plgn.command('begin')
 def begin(data,what = None):
@@ -190,6 +200,8 @@ def init(config):
     plgn.location_video = os.sep.join(plgn.location + config['outtmpl'])
     plgn.queued_links = config.get('queue_file', 'queue.txt')
     plgn.playlistsfile = config.get('playlistsfile', 'playlists.txt')
+    if not os.path.exists(plgn.playlistsfile):
+        open(plgn.playlistsfile,'w')
     plgn.old = []
     plgn.new = []
 
