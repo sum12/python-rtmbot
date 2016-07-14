@@ -105,7 +105,7 @@ def begin(data,what = None):
                 output.append((link,'1'))
                 data.remove(link)
             except DownloadException as e:
-                outputs.append((link,str(e)))
+                output.append((link,str(e)))
     if data == []:            
         os.remove(plgn.queued_links)
     else:
