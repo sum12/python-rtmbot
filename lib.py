@@ -240,10 +240,12 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
         self.setup = wrapper 
         return wrapper
 
-    def command(self, regex, help='', private_only=False, restrict_to=None):
+    def command(self, regex, help=''): 
         def wrapper(func):
-            rx ='^['+regex[0]+regex[0].upper()+']'+regex[1:] +'$'
-            self.funcs.setdefault(rx , (func, help or regex.split()[0], private_only, restrict_to))
+            rx = regex
+            if regex[0].lower() in 'qwertyuiopasdfghjklzxcvbnm':
+                rx ='['+regex[0]+regex[0].upper()+']'+regex[1:] 
+            self.funcs.setdefault(rx , (func, help or regex.split()[0] ))
             return func
         return wrapper
 
