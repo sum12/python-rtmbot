@@ -214,9 +214,17 @@ class Plugin(object):
         self.setup = wrapper 
         return wrapper
 
-    def command(self, regex, help=''):
+    def command(self, regex, help=''): 
+       #a.='qwertyuiopasdfghjklzxcvbnm'
+       #a+a.upper()
+       #print sorted(a+a.upper())
+       #['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 
+       # 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 
+       #'m', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']    
         def wrapper(func):
-            rx ='['+regex[0]+regex[0].upper()+']'+regex[1:] 
+            rx = regex
+            if regex[0].lower() in 'qwertyuiopasdfghjklzxcvbnm':
+                rx ='['+regex[0]+regex[0].upper()+']'+regex[1:] 
             self.funcs.setdefault(rx , (func, help or regex.split()[0] ))
             return func
         return wrapper
