@@ -160,8 +160,7 @@ class Plugin(object):
                 mod = __import__(name)
                 self.module = mod.plgn
             except Exception, e:
-                print 'Error imporrting %s' % name
-                print str(e)
+                logger.exception('Error imporrting %s' % name)
                 self.disabled = True
             else:
                 self.module.setup(config.get(name, {}))

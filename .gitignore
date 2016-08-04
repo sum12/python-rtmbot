@@ -7,3 +7,4 @@ env
 *.txt
 passwordfile.py
 tags
+pynd.py
