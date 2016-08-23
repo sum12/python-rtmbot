@@ -187,10 +187,9 @@ def init(config):
 @plgn.command('ip')
 def ip(data, what=None):
     user = getpass.getuser()
-    location = "/home/"+user+"/ip.txt"
-    f = open(location,'r')
-    data = f.read()
-    f.close()       
+    location = "/home/"+user+"/Heroku_ip_sending/ip.txt"
+    with open(location,'r') as f:
+        data = f.read()
     return data
 @plgn.command('memory')
 def memory(data,what=None):
