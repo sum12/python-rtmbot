@@ -1,39 +1,41 @@
 import os
 import pickle
+from lib import Plugin
+plgn = Plugin('todo')
 
-outputs = []
-crontabs = []
+plgn.tasks = {}
+logger = logging.getLogger('bot.todo')
 
-tasks = {}
-
-FILE="plugins/todo.data"
+FILE="todo.data"
 if os.path.isfile(FILE):
-    tasks = pickle.load(open(FILE, 'rb'))
+    plgn.tasks = pickle.load(open(FILE, 'rb'))
 
-def process_message(data):
-    global tasks
+@plgn.command('tasks|fin|done|show|todo')
+def todo(data, **args):
     channel = data["channel"]
     text = data["text"]
     #only accept tasks on DM channels
     if channel.startswith("D"):
-        if channel not in tasks.keys():
-            tasks[channel] = []
+        if channel not in plgn.tasks.keys():
+            plgn.tasks[channel] = []
         #do command stuff
         if text.startswith("todo"):
-            tasks[channel].append(text[5:])
-            outputs.append([channel, "added"])
+            plgn.tasks[channel].append(text[5:])
+            return 'added'
         if text == "tasks":
             output = ""
             counter = 1
-            for task in tasks[channel]:
+            for task in plgn.tasks[channel]:
                 output += "%i) %s\n" % (counter, task)
                 counter += 1
-            outputs.append([channel, output])
+            return output 
         if text == "fin":
-            tasks[channel] = []
+            plgn.tasks[channel] = []
+            return 'OK'
         if text.startswith("done"):
             num = int(text.split()[1]) - 1
-            tasks[channel].pop(num)
+            plgn.tasks[channel].pop(num)
+            return 'OK'
         if text == "show":
-            print tasks
-        pickle.dump(tasks, open(FILE,"wb"))
+            print plgn.tasks
+        pickle.dump(plgn.tasks, open(FILE,"wb"))

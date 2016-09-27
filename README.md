@@ -11,17 +11,12 @@ Some differences to webhooks:
 3. Logs in as a slack user (or bot)
 4. Bot users must be invited to a channel
 
-Dependencies
-----------
-* websocket-client https://pypi.python.org/pypi/websocket-client/
-* python-slackclient https://github.com/slackhq/python-slackclient
-
 Installation
 -----------
 
-1. Download the python-rtmbot code
+1. Clone
 
-        git clone git@github.com:slackhq/python-rtmbot.git
+        git clone git@github.com:sum12/python-rtmbot.git
         cd python-rtmbot
 
 2. Install dependencies ([virtualenv](http://virtualenv.readthedocs.org/en/latest/) is recommended.)
@@ -34,10 +29,9 @@ Installation
         vi rtmbot.conf
           SLACK_TOKEN: "xoxb-11111111111-222222222222222"
 
-*Note*: At this point rtmbot is ready to run, however no plugins are configured.
 
-Add Plugins
--------
+Use Sample Plugins
+-------------------
 
 Plugins can be installed as .py files in the ```plugins/``` directory OR as a .py file in any first level subdirectory. If your plugin uses multiple source files and libraries, it is recommended that you create a directory. You can install as many plugins as you like, and each will handle every event received by the bot indepentently.
 

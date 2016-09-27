@@ -11,8 +11,8 @@
 ### END INIT INFO
 
 NAME="rtmbot"
-PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 APPDIR="/opt/rtmbot"
+PATH="$APPDIR/.venv/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 APPBIN="rtmbot.py"
 APPARGS="--config ${APPDIR}/rtmbot.conf"
 USER="ubuntu"
