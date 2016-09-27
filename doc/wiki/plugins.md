@@ -1,6 +1,6 @@
 Plug-ins are python scripts with functions with which take actions when a regex matching them is passed.
 
-[repeat.py](./../example-plugin/repeat/repeat.py)  
+[repeat.py](./../example-plugins/repeat.py)  
 ```
 ## Import the Plugin class. 
 ## Create an instance, with a name.
@@ -21,7 +21,7 @@ This command echos back any string it receives"""
 ```
 
 
-[actlogin.py](./../example-plugin/actlogin.py)  
+[actlogin.py](./../example-plugins/actlogin.py)  
 My ISP logsout once every 24hours. (Relogging in when browsing is painfully slow).
 So at 5am everyday the command will logout and login.
 ```
