@@ -135,7 +135,7 @@ class RtmBot(FileSystemEventHandler):
             name = plugin.split('/')[-1][:-3]
             plg = None
             try:
-                plg = Plugin(self, name) 
+                plg = Plugin(self, name, plgnid = len(self.bot_plugins)+1)  
             except Exception, e:
                 logging.exception('error loading plugin %s' % name)
                 continue
@@ -148,7 +148,7 @@ class RtmBot(FileSystemEventHandler):
         self.reload = False
 
 class Plugin(object):
-    def __init__(self, bot, name, plugin_config={}):
+    def __init__(self, bot, name, plgnid, plugin_config={}):
         self.name = name
         self.jobs = []
         self.bot = bot
@@ -158,6 +158,7 @@ class Plugin(object):
         if name in config:
             self.disabled = config[name].get('DISABLED', False)
         if not self.disabled:
+            config.setdefault(name, {}).setdefault('plgnid',plgnid)
             try:
                 mod = __import__(name)
                 self.module = mod.plgn
@@ -165,7 +166,7 @@ class Plugin(object):
                 logger.exception('Error imporrting %s' % name)
                 self.disabled = True
             else:
-                self.module.setup(config.get(name, {}))
+                self.module.setup(config[name])
 
     def register_jobs(self):
         if 'crontable' in dir(self.module):

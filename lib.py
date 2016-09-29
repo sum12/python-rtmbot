@@ -206,10 +206,11 @@ class Plugin(object):
         self.funcs.setdefault('[Hh]elp( (?P<plugin>\w+)( (?P<action>\w+))?)?', (helper, 'help'))
 
     def setup(self, config=None):
-        pass
+        self.plgnid = config['plgnid']
 
     def setupmethod(self, func):
         def wrapper(config=None):
+            self.plgnid = config['plgnid']
             func(config)
         self.setup = wrapper 
         return wrapper
