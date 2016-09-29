@@ -7,7 +7,7 @@ import time,re,getpass,os,csv
 from lib import Plugin, cron
 logger = logging.getLogger('bot.wallet')
 logger.setLevel(logging.DEBUG)
-plgn = Plugin('wallet')
+plgn = Plugin('daily_notes')
 
 fieldnames = ['Date','Seperator','Todo','Type']
 
