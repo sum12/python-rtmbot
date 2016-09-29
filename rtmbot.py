@@ -105,6 +105,8 @@ class RtmBot(FileSystemEventHandler):
     def input(self, data):
         if 'type' in data:
             function_name = 'process_' + data['type']
+            if data.get('user'):
+                data['user_object'] = self.slack_client.server.users.find(data['user'])
 #            vvvv('got {}'.format(function_name))
             for plugin in self.bot_plugins:
 #                plugin.register_jobs()
