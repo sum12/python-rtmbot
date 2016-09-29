@@ -3,6 +3,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from  random import randint, randrange
+from collections import namedtuple, defaultdict
 import re
 
 # DOC(sumitj) Randomizer function allowing to select a
@@ -182,54 +183,83 @@ def atTime(*dt):
         return d
     return wrap
 
-
+Func = namedtuple('Func', ['fn', 'help', 'private_only', 'restrict_to'])
 class Plugin(object):
     def __init__(self, name):
-        self.funcs = {}
+        self.funcs = defaultdict(Func)
         self.outputs = []
         self.crontable = []
         self.name = name 
 
+        @self.command('help( (?P<plugin>\w+)( (?P<action>\w+))?)?', help = 'help')
         def helper(data, plugin, action):
             """ Default Helper function """
             ret = []
-            if plugin and plugin.lower() == self.name and action:
-               for fn,helpstr in self.funcs.values():
-                   if helpstr == action and fn != helper:
-                       ret.append(fn.__doc__ or 'Nope')
-            elif plugin and plugin.lower() == self.name:
-                ret = [helpstr for (_, helpstr) in self.funcs.values()]
+            fn = None
+            if plugin and plugin.lower() in {self.name, str(self.plgnid)} and action:
+                try:
+                    action = int(action)
+                except ValueError:
+                    for fntuple in self.funcs.values():
+                        if fntuple[1] == action and fntuple[0] != helper:
+                            fn = fntuple[0]
+                            ret = fn.__doc__ or 'Nope, not documented'
+                else:
+                    try:
+                        fn = self.funcs.values()[action-1][0]
+                        ret = fn.__doc__ or 'Nope, not documented'
+                    except IndexError :
+                        ret = 'Cant you even read numbers'
+                    except :
+                        ret = 'Something is wrong with the plugin'
+            elif plugin and plugin.lower() in {self.name, str(self.plgnid)}:
+                ret = [
+                        ("*" if fntuple[2] else "") + ("#" if fntuple[3] else "") + fntuple[1] 
+                        for fntuple in self.funcs.values()
+                        ]
+                ret = "\n".join(["%2i. %s" % (ind +1, s) for ind,s in enumerate(ret)])
+                ret += ("\n\n* - Private/Direct message only \n # - Restricted Access")
             elif not plugin:
-                ret = [self.name]
-            return '\n'.join(ret)
+                ret = "%2i. %s" %(self.plgnid, self.name)
+            return ret
 
-        self.funcs.setdefault('[Hh]elp( (?P<plugin>\w+)( (?P<action>\w+))?)?', (helper, 'help'))
+        #self.funcs.setdefault('[Hh]elp( (?P<plugin>\w+)( (?P<action>\w+))?)?', (helper, 'help' , False, None))
 
     def setup(self, config=None):
-        pass
+        self.plgnid = config['plgnid']
 
     def setupmethod(self, func):
         def wrapper(config=None):
+            self.plgnid = config['plgnid']
             func(config)
         self.setup = wrapper 
         return wrapper
 
-    def command(self, regex, help=''):
+    def command(self, regex, help='', private_only=False, restrict_to=None):
         def wrapper(func):
-            rx ='['+regex[0]+regex[0].upper()+']'+regex[1:] 
-            self.funcs.setdefault(rx , (func, help or regex.split()[0] ))
+            rx ='^['+regex[0]+regex[0].upper()+']'+regex[1:] +'$'
+            self.funcs.setdefault(rx , (func, help or regex.split()[0], private_only, restrict_to))
             return func
         return wrapper
 
     def process_message(self, data):
-        for regex, (fn, _) in self.funcs.items():
+        for regex, (fn, _, private_only, restrict_to) in self.funcs.items():
             if 'text' in data:
                 args = re.match(regex, data['text'])
-                if args:
-                    ret = fn(data, **(args.groupdict()))
-    #                print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
-                    if ret:
-                        self.outputs.append([data['channel'], ret ])
+                if not args: continue
+                if private_only and not data['channel'].lower().startswith('d'): continue
+                if restrict_to:
+                    if not hasattr(self, restrict_to):
+                        logger.info('restrict_to (%s) defined, but is not available' % restrict_to)
+                        continue
+                    restrict_to = getattr(self, restrict_to)
+                    by = data['user_object'].name if data.get('user_object') else data['user']
+                    if by not in restrict_to:
+                        continue
+                ret = fn(data, **(args.groupdict()))
+#                print 'setting output {ret} for {fnname}'.format(ret=ret,fnname=fnname.__name__)
+                if ret:
+                    self.outputs.append([data['channel'], ret ])
 
     def schedule(self, schfunc):
         def wrapper(func):
