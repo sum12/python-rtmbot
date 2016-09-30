@@ -10,6 +10,7 @@ from collections import defaultdict
 logger = logging.getLogger('bot.reimburse')
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('reimburse')
+plgn.__doc__ = "Use this plugin to store reimbursements. The details will be mailed to you by the end of month"
 
 
 @plgn.command('reim (?P<amt>-?\d+) (?P<why>[A-Za-z0-9 !@#$%^&*()]+)')
@@ -38,6 +39,7 @@ def userwise():
         rr = DictReader(f)
         ret = defaultdict(list)
         for d in filter(lambda x: int(x['status']), rr):
+            d['dt'] = datetime.strptime(d['dt'],'%Y-%m-%d %H:%M:%S.%f')
             d['amt'] = float(d['amt'])
             ret[d['by']].append(d)
     return ret
@@ -78,8 +80,70 @@ def close(data, **details):
     init(None) 
     if os.path.exists(plgn.exp_filename):
         return 'Closed'
+ 
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email import Encoders
+from email.MIMEBase import MIMEBase
+import StringIO
 
 
+@plgn.command('sendmail', private_only=True, restrict_to='admin_names')
+def sendMonthlyEmail(data, **details):
+    ret = []
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.starttls()
+    server.login(plgn.mail['from']['login'] ,plgn.mail['from']['password'] )
+    for user, details in userwise().items():
+        if user not in plgn.mail.keys():
+            continue 
+        msg = MIMEMultipart()
+        msg['Subject'] = 'Your Monthly ReImbursement details'
+        msg['From'] = plgn.mail['from']['email']
+        msg['To'] =  plgn.mail[user]['email']
+        #msg['Text'] = "Here is the latest data"
+        csvfile = StringIO.StringIO()
+        wr = DictWriter(csvfile, ['key','value'])
+        wr.writerow({'key':'Name', 'value':plgn.mail[user]['fullname'] })
+        wr.writerow({'key':'Purpose', 'value': 'Company Expenses'})
+        wr.writerow({'key':'Period', 'value': datetime.now().strftime('%B of %Y')})
+        wr = DictWriter(csvfile, ['Date','Description', 'Cost'])
+        wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
+        wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
+        wr.writeheader()
+        total = 0
+        for det in details:
+            dt = det['dt'].strftime('%d:%b:%Y')
+            total += det['amt']
+            wr.writerow({
+                'Date':dt,
+                'Description': det['why'],
+                'Cost':det['amt']
+                })
+        wr.writerow({
+            'Date':'',
+            'Description': 'total',
+            'Cost': total
+            })
+
+        wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
+        wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
+
+        part = MIMEBase('application', 'csv')
+        Encoders.encode_base64(part)
+        part.add_header('Content-Disposition', 'attachment; filename=exp.csv')
+        part.set_payload(csvfile.getvalue())
+#        logger.debug(csvfile.getvalue())
+
+        msg.attach(part)
+
+        server.sendmail(msg['from'], msg['to'], msg.as_string())
+        ret.append(user+ " - " +plgn.mail[user]['email'])
+    server.quit()
+    if ret:
+        return "\n".join(["Sent Mail to users"] + ret)
+    else:
+        return "No Mails were sent"
 
 @plgn.setupmethod
 def init(config):
@@ -87,6 +151,7 @@ def init(config):
         plgn.exp_filename = config.get('exp_filename', 'exp.csv')
         plgn.exp_bkpname = config.get('bkp_filename', 'exp-%s.csv')
         plgn.admin_names = config['admins']
+        plgn.mail = config['mail']
     if not os.path.exists(plgn.exp_filename):
         with open(plgn.exp_filename, 'a') as f:
             wr = DictWriter(f, ['dt','by','amt', 'why','status'])
