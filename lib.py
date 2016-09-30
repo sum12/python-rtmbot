@@ -193,7 +193,10 @@ class Plugin(object):
 
         @self.command('help( (?P<plugin>\w+)( (?P<action>\w+))?)?', help = 'help')
         def helper(data, plugin, action):
-            """ Default Helper function """
+            """usage: help
+usage: help   "plgin-name or plgn-number"
+usage: help   "plgin-name or plgn-number"    "command-name or command-number"
+        """
             ret = []
             fn = None
             if plugin and plugin.lower() in {self.name, str(self.plgnid)} and action:
@@ -220,10 +223,9 @@ class Plugin(object):
                 ret = "\n".join(["%2i. %s" % (ind +1, s) for ind,s in enumerate(ret)])
                 ret += ("\n\n* - Private/Direct message only \n # - Restricted Access")
             elif not plugin:
-                ret = "%2i. %s" %(self.plgnid, self.name)
+                ret = "%2i. %s\n%s" %(self.plgnid, self.name, self.__doc__ or "")
             return ret
 
-        #self.funcs.setdefault('[Hh]elp( (?P<plugin>\w+)( (?P<action>\w+))?)?', (helper, 'help' , False, None))
 
     def setup(self, config=None):
         self.plgnid = config['plgnid']
