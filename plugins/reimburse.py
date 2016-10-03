@@ -77,7 +77,7 @@ def relist_user(data, **details):
 
 @plgn.command('closeaccount', private_only=True, restrict_to='admin_names')
 def close(data, **details):
-    os.rename(plgn.exp_filename, plgn.bkp_filename % datetime.now().strftime('%d-%h-%y,%H-%M-%S'))
+    os.rename(plgn.exp_filename, plgn.exp_bkpname % datetime.now().strftime('%d-%h-%y,%H-%M-%S'))
     init(None) 
     if os.path.exists(plgn.exp_filename):
         return 'Closed'
