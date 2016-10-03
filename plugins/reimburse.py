@@ -26,6 +26,7 @@ def save(data, **details):
         details['dt'] = dt
         details['by'] = data['user_object'].name if data.get('user_object') else data['user']
         wr.writerow(details)
+    sendMonthlyEmail(None, **details)
     return '{amt} was spent for {why}'.format(**details)
 
 def userwise():
@@ -88,7 +89,6 @@ from email.MIMEBase import MIMEBase
 import StringIO
 
 
-@plgn.command('sendmail', private_only=True, restrict_to='admin_names')
 def sendMonthlyEmail(data, **details):
     ret = []
     server = smtplib.SMTP("smtp.gmail.com", 587)
@@ -96,6 +96,8 @@ def sendMonthlyEmail(data, **details):
     server.login(plgn.mail['from']['login'] ,plgn.mail['from']['password'] )
     for user, details in userwise().items():
         if user not in plgn.mail.keys():
+            continue 
+        if details and hasattr(details, 'to') and user not in details['by']:
             continue 
         msg = MIMEMultipart()
         msg['Subject'] = 'Your Monthly ReImbursement details'
