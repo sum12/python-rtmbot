@@ -232,7 +232,10 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
 
     def setupmethod(self, func):
         def wrapper(config=None):
-            self.plgnid = config['plgnid']
+            if not config:
+                self.plgnid = getattr(self, plgnid, self.name)
+            else:
+                self.plgnid = config['plgnid']
             func(config)
         self.setup = wrapper 
         return wrapper
