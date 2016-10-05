@@ -89,58 +89,57 @@ from email.MIMEBase import MIMEBase
 import StringIO
 
 
-def sendMonthlyEmail(data, **details):
+def sendMonthlyEmail(data, by, **kwargs):
     ret = []
     server = smtplib.SMTP("smtp.gmail.com", 587)
     server.starttls()
     server.login(plgn.mail['from']['login'] ,plgn.mail['from']['password'] )
-    for user, details in userwise().items():
-        if user not in plgn.mail.keys():
-            continue 
-        if details and hasattr(details, 'to') and user not in details['by']:
-            continue 
-        msg = MIMEMultipart()
-        msg['Subject'] = 'Your Monthly ReImbursement details'
-        msg['From'] = plgn.mail['from']['email']
-        msg['To'] =  plgn.mail[user]['email']
-        #msg['Text'] = "Here is the latest data"
-        csvfile = StringIO.StringIO()
-        wr = DictWriter(csvfile, ['key','value'])
-        wr.writerow({'key':'Name', 'value':plgn.mail[user]['fullname'] })
-        wr.writerow({'key':'Purpose', 'value': 'Company Expenses'})
-        wr.writerow({'key':'Period', 'value': datetime.now().strftime('%B of %Y')})
-        wr = DictWriter(csvfile, ['Date','Description', 'Cost'])
-        wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
-        wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
-        wr.writeheader()
-        total = 0
-        for det in details:
-            dt = det['dt'].strftime('%d:%b:%Y')
-            total += det['amt']
-            wr.writerow({
-                'Date':dt,
-                'Description': det['why'],
-                'Cost':det['amt']
-                })
+    user = by
+    details = userwise()[by]
+    if user not in plgn.mail.keys():
+        logger.info('Unable to send mail to %s' % user)
+    msg = MIMEMultipart()
+    msg['Subject'] = 'Your Monthly ReImbursement details for ' + datetime.now().strftime('%B of %Y')
+    msg['From'] = plgn.mail['from']['email']
+    msg['To'] =  plgn.mail[user]['email']
+    #msg['Text'] = "Here is the latest data"
+    csvfile = StringIO.StringIO()
+    wr = DictWriter(csvfile, ['key','value'])
+    wr.writerow({'key':'Name', 'value':plgn.mail[user]['fullname'] })
+    wr.writerow({'key':'Purpose', 'value': 'Company Expenses'})
+    wr.writerow({'key':'Period', 'value': datetime.now().strftime('%B of %Y')})
+    wr = DictWriter(csvfile, ['Date','Description', 'Cost'])
+    wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
+    wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
+    wr.writeheader()
+    total = 0
+    for det in details:
+        dt = det['dt'].strftime('%d:%b:%Y')
+        total += det['amt']
         wr.writerow({
-            'Date':'',
-            'Description': 'total',
-            'Cost': total
+            'Date':dt,
+            'Description': det['why'],
+            'Cost':det['amt']
             })
+    wr.writerow({
+        'Date':'',
+        'Description': 'total',
+        'Cost': total
+        })
 
-        wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
-        wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
+    wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
+    wr.writerow({ 'Date':'', 'Description': '', 'Cost':'' }) # empty row
 
-        part = MIMEBase('application', 'csv')
-        Encoders.encode_base64(part)
-        part.add_header('Content-Disposition', 'attachment; filename=exp.csv')
-        part.set_payload(csvfile.getvalue())
+    part = MIMEBase('application', 'csv')
+    Encoders.encode_base64(part)
+    part.add_header('Content-Disposition', 'attachment; filename=exp.csv')
+    part.set_payload(csvfile.getvalue())
 #        logger.debug(csvfile.getvalue())
 
-        msg.attach(part)
+    msg.attach(part)
 
-        server.sendmail(msg['from'], msg['to'], msg.as_string())
-        ret.append(user+ " - " +plgn.mail[user]['email'])
+    server.sendmail(msg['from'], msg['to'], msg.as_string())
+    ret.append(user+ " - " +plgn.mail[user]['email'])
     server.quit()
     if ret:
         return "\n".join(["Sent Mail to users"] + ret)
