@@ -61,8 +61,8 @@ def link_downloader(*a):
                     'preferredcodec': 'mp3',
                     'preferredquality': '192',}]
                 })
-    if len(args)>2 and ('k' in args[2].lower()):
-        y.update({ 'keepvideo':True })
+    if len(args)>2 and ('k' in args[2].lower()): y.update({ 'keepvideo':True })
+    if len(args)>3 and ('i' in args[3].lower()): y.update({ 'ignoreerrors':True })
     link = str(args[0])
     ydl= youtube_dl.YoutubeDL(y)
     try:
@@ -114,10 +114,12 @@ def continueplaylist(*args, **kwargs):
     logger.debug(playids)
     for i in  playids:
         try:
-            logger.debug('starting for id->' + i)
+            logger.info('starting for id->' + i)
             link_downloader(i, *'ak')
         except:
             pass
+        finally:
+            logger.info('done Downloading id->' +i)
             
 
 
