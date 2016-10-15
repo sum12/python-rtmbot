@@ -52,7 +52,6 @@ def link_downloader(*a):
             'logger':ydl_logger,
             'nooverwrites':'True'
     }
-    logger.debug(y['outtmpl'])
     if len(args)>1 and (args[1] == 'a' or args[1]=='A'):
         y.update({
                 'format': 'bestaudio/best',
@@ -63,6 +62,7 @@ def link_downloader(*a):
                 })
     if len(args)>2 and ('k' in args[2].lower()): y.update({ 'keepvideo':True })
     if len(args)>3 and ('i' in args[3].lower()): y.update({ 'ignoreerrors':True })
+    logger.debug(y)
     link = str(args[0])
     ydl= youtube_dl.YoutubeDL(y)
     try:
@@ -115,7 +115,7 @@ def continueplaylist(*args, **kwargs):
     for i in  playids:
         try:
             logger.info('starting for id->' + i)
-            link_downloader(i, *'ak')
+            link_downloader(i, *'aki')
         except:
             pass
         finally:
