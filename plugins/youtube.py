@@ -98,8 +98,9 @@ def queue(data,what,param):
     return '{0} added to download queue'.format(str(what))
 
 
-@plgn.command('<(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?.*?(?:list)=(?P<playid>.*?)>')
+@plgn.command('save <(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?.*?(?:list)=(?P<playid>.*?)>')
 def saveplaylist(data, playid):
+    """ save playlist for recurring download"""
     if playid in  [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i != None]:
         return 'playid {0} exists'.format(playid)
     open(plgn.playlistsfile,'a').write('\n{0}'.format(playid))
