@@ -1,11 +1,19 @@
 import time,os,subprocess
 import sys
 import logging
+from logging.handlers import RotatingFileHandler
 import re,youtube_dl,getpass,os
 from lib import Plugin, cron
 logger = logging.getLogger('bot.youtube')
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('youtube')
+
+ydl_handler = RotatingFileHandler('youtubedl.log', 'a', 1 * 1024 * 1024)
+ydl_handler.propagate = False
+ydl_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
+ydl_logger = logging.getLogger('youtubedl')
+ydl_logger.addHandler(ydl_handler)
+ydl_logger.setLevel(logging.DEBUG)
 
 @plgn.command('tell')
 def tell(data,what=None):
@@ -41,7 +49,7 @@ def link_downloader(*a):
     args = [str(i) for i in a]
     y = {
             'outtmpl':plgn.location_video,
-            'logger':logger,
+            'logger':ydl_logger,
             'nooverwrites':'True'
     }
     if len(args)>1 and (args[1] == 'a' or args[1]=='A'):
@@ -52,6 +60,9 @@ def link_downloader(*a):
                     'preferredcodec': 'mp3',
                     'preferredquality': '192',}]
                 })
+    if len(args)>2 and ('k' in args[2].lower()): y.update({ 'keepvideo':True })
+    if len(args)>3 and ('i' in args[3].lower()): y.update({ 'ignoreerrors':True })
+    logger.debug(y)
     link = str(args[0])
     ydl= youtube_dl.YoutubeDL(y)
     try:
@@ -85,6 +96,33 @@ def queue(data,what,param):
         f.write(final)
         f.write(',')
     return '{0} added to download queue'.format(str(what))
+
+
+@plgn.command('save <(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?.*?(?:list)=(?P<playid>.*?)>')
+def saveplaylist(data, playid):
+    """ save playlist for recurring download"""
+    if playid in  [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i != None]:
+        return 'playid {0} exists'.format(playid)
+    open(plgn.playlistsfile,'a').write('\n{0}'.format(playid))
+    return 'Saved playid {0}'.format(playid)
+
+@plgn.schedule(cron(hour=range(2,6)+range(10,18), minute=[0],second=[0]))
+@plgn.command('startplaylist')
+def continueplaylist(*args, **kwargs):
+    """ DONT USE THIS """
+    playids = [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i ]
+    logger.debug(playids)
+    for i in  playids:
+        try:
+            logger.info('starting for id->' + i)
+            link_downloader(i, *'aki')
+        except:
+            pass
+        finally:
+            logger.info('done Downloading id->' +i)
+            
+
+
 
 @plgn.command('begin')
 def begin(data,what = None):
@@ -176,11 +214,14 @@ def listings(data,what=None):
 
 
 @plgn.setupmethod
-def init(config):
-    plgn.location = unicode(config['location'])
-    plgn.location_video = plgn.location + config['outtmpl']
-    plgn.queued_links = config['queue_file']
-    #plgn.playlists o= open(config['playlists']).read().split('/n')
+def init(config=None):
+    if config is not None:  # Anything except None will let you in.
+        plgn.location = unicode(config['location'])
+        plgn.location_video = os.sep.join([plgn.location , config['outtmpl']])
+        plgn.queued_links = config.get('queue_file', 'queue.txt')
+        plgn.playlistsfile = config.get('playlistsfile', 'playlists.txt')
+        if not os.path.exists(plgn.playlistsfile):
+            open(plgn.playlistsfile,'w')
     plgn.old = []
     plgn.new = []
 
