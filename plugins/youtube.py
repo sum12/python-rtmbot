@@ -15,6 +15,12 @@ ydl_logger = logging.getLogger('youtubedl')
 ydl_logger.addHandler(ydl_handler)
 ydl_logger.setLevel(logging.DEBUG)
 
+# downloaded_list is a global variable for storing the names of the videos which are downloaded
+# by link_downloader. This is used for parsing video names form downloader_hook to the download
+# function so that it can be returned to inform the user. This is just a temporary solution.
+# In the long run, may be modifying the thread class to include a list would be a better option.
+downloaded_list = []
+
 @plgn.command('tell')
 def tell(data,what=None):
     string = """Follow the following commands :
@@ -44,14 +50,20 @@ class DownloadException(Exception):
         super(DownloadException, self).__init__(msg)
         self.exc_info = exc_info
 
+def downloader_hook(d):
+    global donwloaded_list
+    if d['status']=='finished':
+        downloaded_list.append(os.path.split(os.path.abspath(d['filename']))[1])
+        
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
 def link_downloader(*a):
     args = [str(i) for i in a]
     y = {
             'outtmpl':plgn.location_video,
             'logger':ydl_logger,
-            'nooverwrites':'True'
-    }
+            'nooverwrites':'True',
+            'progress_hooks':[downloader_hook]
+            }
     if len(args)>1 and (args[1] == 'a' or args[1]=='A'):
         y.update({
                 'format': 'bestaudio/best',
@@ -62,7 +74,6 @@ def link_downloader(*a):
                 })
     if len(args)>2 and ('k' in args[2].lower()): y.update({ 'keepvideo':True })
     if len(args)>3 and ('i' in args[3].lower()): y.update({ 'ignoreerrors':True })
-    logger.debug(y)
     link = str(args[0])
     ydl= youtube_dl.YoutubeDL(y)
     try:
@@ -72,9 +83,9 @@ def link_downloader(*a):
         exc_info = sys.exc_info()
         raise DownloadException(str(e),exc_info)
 
-
 @plgn.command('download <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
 def download(data, what,param):
+    global downloaded_list
     if not os.access(plgn.location,os.F_OK):
         os.mkdir(plgn.location)
     plgn.old=os.listdir(plgn.location)
@@ -83,8 +94,10 @@ def download(data, what,param):
     except DownloadException as e:
         return  str(e.msg)
     plgn.new = os.listdir(plgn.location)
-    final = [i for i in plgn.new if i not in plgn.old]
-    return "Done downloading "+ "\n" +"\n".join(final)
+    #final = [i for i in plgn.new if i not in plgn.old]
+    final = "\n".join(downloaded_list)
+    downloaded_list=[]
+    return "Done downloading "+ "\n" + final
 
 @plgn.command('queue add <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
 def queue(data,what,param):
