@@ -125,6 +125,7 @@ def saveplaylist(data, playid):
 @plgn.command('startplaylist')
 def continueplaylist(*args, **kwargs):
     """ DONT USE THIS """
+    global downloaded_list
     playids = [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i ]
     logger.debug(playids)
     for i in  playids:
@@ -134,11 +135,11 @@ def continueplaylist(*args, **kwargs):
         except:
             pass
         finally:
-            logger.info('done Downloading id->' +i)
+            logger.info('Done downloading id->' +i)
+            final  = "\n".join(downloaded_list)
+            downloaded_list=[]
+            return "Done downloading. New downloads include "+final
             
-
-
-
 @plgn.command('begin')
 def begin(data,what = None):
     if not os.access(plgn.queued_links,os.F_OK):
@@ -149,7 +150,6 @@ def begin(data,what = None):
         os.mkdir(plgn.location)
     data = links.split(",")
     data = data[:-1]
-    plgn.old=os.listdir(plgn.location)
     output=[]
     for link in data:       
         if not link==" " or not link == "":
@@ -165,8 +165,9 @@ def begin(data,what = None):
         with open(plgn.queued_links,'w') as f:
             f.write(",".join(data))
             f.write(",")
-    plgn.new = os.listdir(plgn.location)
-    final = set(plgn.new) - set(plgn.old) 
+    global downloaded_list
+    final = downloaded_list
+    downloaded_list = []
     errors = ['Link = '+str(i) + '\n' + 'Error = '+str(j) for i,j in output if j!='1' ]
     if len(errors)==0:
         msg = "Done downloading \n {0}".format("\n".join(final))
@@ -237,8 +238,6 @@ def init(config=None):
         plgn.playlistsfile = config.get('playlistsfile', 'playlists.txt')
         if not os.path.exists(plgn.playlistsfile):
             open(plgn.playlistsfile,'w')
-    plgn.old = []
-    plgn.new = []
 
 @plgn.command('ip')
 def ip(data, what=None):
