@@ -62,7 +62,7 @@ def link_downloader(*a):
             'outtmpl':plgn.location_video,
             'logger':ydl_logger,
             'nooverwrites':'True',
-            'progress_hooks':[downloader_hook]
+            'progress_hooks':[downloader_hook],
             }
     if len(args)>1 and (args[1] == 'a' or args[1]=='A'):
         y.update({
@@ -92,11 +92,13 @@ def download(data, what,param):
     try:
         link_downloader(what,param)
     except DownloadException as e:
-        return  str(e.msg)
+        logger.debug(str(e))
+        return str(e) 
     plgn.new = os.listdir(plgn.location)
     #final = [i for i in plgn.new if i not in plgn.old]
-    final = "\n".join(downloaded_list)
-    downloaded_list=[]
+    if downloaded_list:
+        final = "\n".join(downloaded_list)
+        downloaded_list=[]
     return "Done downloading "+ "\n" + final
 
 @plgn.command('queue add <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
