@@ -68,6 +68,10 @@ class ThreadPool:
     def schedule_task(self, checker, func, *args, **kwargs):
         def waiter():
             for t in checker:
+                while t < 0:
+                    logger.info('delaying exeution')
+                    self.term_cond.wait(t*-1)
+                    t = next(checker)
                 if t > 10:   # Not good enough! as t can vary
                     logger.info("waiting for %s for %s"% (t, func.__name__))
                 self.term_cond.wait(t)

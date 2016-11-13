@@ -184,12 +184,15 @@ def atTime(*dt):
     return wrap
 
 Func = namedtuple('Func', ['fn', 'help', 'private_only', 'restrict_to'])
+def NOOP(*a,**kw): 
+    pass
 class Plugin(object):
     def __init__(self, name):
         self.funcs = defaultdict(Func)
         self.outputs = []
         self.crontable = []
         self.name = name 
+        self.maxcount = {}
 
         @self.command('help( (?P<plugin>\w+)( (?P<action>\w+))?)?', help = 'help')
         def helper(data, plugin, action):
@@ -268,8 +271,23 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                 if ret:
                     self.outputs.append([data['channel'], ret ])
 
-    def schedule(self, schfunc):
+    def schedule(self, schfunc, maximum=None, prestart=NOOP, postdone=NOOP):
+        self.maxcount[id(func)] = maximum
+        def context():
+            if self.maxcount[id(func)] != None:
+                self.maxcount[id(func)] -= 1
+            prestart()
+            func()
+            postdone()
+            if self.maxcount[id(func)] != None:
+                self.maxcount[id(func)] += 1
+        def limittomax():
+            for t in schfunc:
+                while self.maxcount[id(func)] != None and not self.maxcount[id(func)]:
+                    t = max(t-2, 1)
+                    yield -2
+                yield t
         def wrapper(func):
-            self.crontable.append([schfunc, func])
+                self.crontable.append([limittomax(), context])
             return func
         return wrapper
