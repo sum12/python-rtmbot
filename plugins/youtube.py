@@ -106,7 +106,7 @@ def saveplaylist(data, playid):
     open(plgn.playlistsfile,'a').write('\n{0}'.format(playid))
     return 'Saved playid {0}'.format(playid)
 
-@plgn.schedule(cron(hour=range(2,6)+range(10,18), minute=[0],second=[0]))
+@plgn.schedule(cron(hour=range(2,6)+range(10,18), minute=[0],second=[0]), maximum=1)
 @plgn.command('startplaylist')
 def continueplaylist(*args, **kwargs):
     """ DONT USE THIS """
