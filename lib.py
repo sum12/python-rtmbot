@@ -288,6 +288,6 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                     yield -2
                 yield t
         def wrapper(func):
-                self.crontable.append([limittomax(), context])
+            self.crontable.append([limittomax(), context])
             return func
         return wrapper
