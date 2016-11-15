@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from  random import randint, randrange
 from collections import namedtuple, defaultdict
 import re
+from functools import wraps
 
 # DOC(sumitj) Randomizer function allowing to select a
 # random value from a series of ranges, the selected values
@@ -272,22 +273,23 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                     self.outputs.append([data['channel'], ret ])
 
     def schedule(self, schfunc, maximum=None, prestart=NOOP, postdone=NOOP):
-        self.maxcount[id(func)] = maximum
-        def context():
-            if self.maxcount[id(func)] != None:
-                self.maxcount[id(func)] -= 1
-            prestart()
-            func()
-            postdone()
-            if self.maxcount[id(func)] != None:
-                self.maxcount[id(func)] += 1
-        def limittomax():
-            for t in schfunc:
-                while self.maxcount[id(func)] != None and not self.maxcount[id(func)]:
-                    t = max(t-2, 1)
-                    yield -2
-                yield t
         def wrapper(func):
+            self.maxcount[id(func)] = maximum
+            def limittomax():
+                for t in schfunc:
+                    while self.maxcount[id(func)] != None and not self.maxcount[id(func)]:
+                        t = max(t-2, 1)
+                        yield -2
+                    yield t
+            @wraps(func)
+            def context():
+                if self.maxcount[id(func)] != None:
+                    self.maxcount[id(func)] -= 1
+                prestart()
+                func()
+                postdone()
+                if self.maxcount[id(func)] != None:
+                    self.maxcount[id(func)] += 1
             self.crontable.append([limittomax(), context])
             return func
         return wrapper
