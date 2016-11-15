@@ -1,7 +1,7 @@
 import time
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from  random import randint, randrange
 from collections import namedtuple, defaultdict
 import re
@@ -35,7 +35,7 @@ def rr(lst):
 def recr(curnt,nxt=None):
     rt = nxt.next() if nxt!=None else 0
     while 1:
-        for i in curnt(): 
+        for i in curnt(rt): 
             yield i,rt
         if nxt:
             rt = nxt.next() 
@@ -47,7 +47,7 @@ def recr(curnt,nxt=None):
 # negative date. Also if the script started at 43 sec then the list would always start from
 # 43 sec thus 0-43 would be always missed.
 
-def rotrng(limit,rotBy=None,rotTo=None):
+def rotrng(prevbits, limit,rotBy=None,rotTo=None):
     def gnr(limit, rotBy, rotTo):
         lst = None
         try:
@@ -75,11 +75,11 @@ def make_cron(*s):
                 # evaluation leads to wrong values being evalated,
                 # this is one way to have the values stuck to function.
                 int(lst)
-                bit=recr(lambda act=lst : range(act),bit)
+                bit=recr(lambda prevbits, act=lst : range(act),bit)
             except:
                 try:
                     iter(lst)   
-                    bit=recr(lambda act=lst: act, bit)
+                    bit=recr(lambda prevbits, act=lst: act, bit)
                 except:
                     raise Exception('Unable to make cron for %s' % lst) 
     return bit
@@ -168,6 +168,55 @@ def cron(**dt):
     return checker()
 
 SELECTEDDATE = None
+
+
+
+def rangecreater(d, realrange):
+    starrex = "^(?P<star>\*)/(?P<freq>\d+)$"
+    rangerex = "^(?P<start>\d+)-(?P<end>\d+)(/(?P<freq>\d+))?$"
+    lovfreq = "^(?P<lov>(\d+,?)+)/(?P<freq>\d+)$"
+    if d['star']:
+        return range(*realrange)
+    if d['starfreq']:
+        z = re.match(starrex, d['starfreq'])
+        if z:
+            freq = z.groupdict()['freq']
+            freq = int(freq)
+            realrange.append(freq)
+            return range(*realrange)
+    if d['range'] or d['rangefreq']:
+        z = re.match(rangerex, d['range'] or d['rangefreq'])
+        if z:
+            vals = z.groupdict()
+            freq = int(vals['freq'] or 1)
+            start = int(vals['start'])
+            end = int(vals['end'])
+            if start and end and start <= end:
+                return range(start, end, freq)
+    if d['lov']:
+        return sorted(map(int, d['lov'].split(',')))
+
+
+def cronfromstring(cronstr):
+    order = ('minute', 'hour', 'dom', 'month', 'dow')
+    ranges = ((0,60), (0,24), None, (0,12), (0,7))
+    cronstr = cronstr.split()
+    def schfunc():
+        pass
+
+    def calcdays(year, month, end):
+        daysinthismonth = getdays(year, month) 
+#        0,1,2,3,4,5,6
+#      0,1,2,3,4,5,6,7
+        while day <= daysinthismonth :
+        while(date(month, year day).weekday() + 1) in args['dow'] and )
+            day+=1
+        yield day
+        day+=1
+        
+
+    return schfunc
+
 
 # DOC(sumitj) awaiting deprecation
 def atTime(*dt):
