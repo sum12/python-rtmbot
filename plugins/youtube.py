@@ -15,6 +15,12 @@ ydl_logger = logging.getLogger('youtubedl')
 ydl_logger.addHandler(ydl_handler)
 ydl_logger.setLevel(logging.DEBUG)
 
+# downloaded_list is a global variable for storing the names of the videos which are downloaded
+# by link_downloader. This is used for parsing video names form downloader_hook to the download
+# function so that it can be returned to inform the user. This is just a temporary solution.
+# In the long run, may be modifying the thread class to include a list would be a better option.
+downloaded_list = []
+
 @plgn.command('tell')
 def tell(data,what=None):
     string = """Follow the following commands :
@@ -44,14 +50,20 @@ class DownloadException(Exception):
         super(DownloadException, self).__init__(msg)
         self.exc_info = exc_info
 
+def downloader_hook(d):
+    global donwloaded_list
+    if d['status']=='finished':
+        downloaded_list.append(os.path.split(os.path.abspath(d['filename']))[1])
+        
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
 def link_downloader(*a):
     args = [str(i) for i in a]
     y = {
             'outtmpl':plgn.location_video,
             'logger':ydl_logger,
-            'nooverwrites':'True'
-    }
+            'nooverwrites':'True',
+            'progress_hooks':[downloader_hook],
+            }
     if len(args)>1 and (args[1] == 'a' or args[1]=='A'):
         y.update({
                 'format': 'bestaudio/best',
@@ -62,7 +74,6 @@ def link_downloader(*a):
                 })
     if len(args)>2 and ('k' in args[2].lower()): y.update({ 'keepvideo':True })
     if len(args)>3 and ('i' in args[3].lower()): y.update({ 'ignoreerrors':True })
-    logger.debug(y)
     link = str(args[0])
     ydl= youtube_dl.YoutubeDL(y)
     try:
@@ -72,19 +83,23 @@ def link_downloader(*a):
         exc_info = sys.exc_info()
         raise DownloadException(str(e),exc_info)
 
-
 @plgn.command('download <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
 def download(data, what,param):
+    global downloaded_list
     if not os.access(plgn.location,os.F_OK):
         os.mkdir(plgn.location)
     plgn.old=os.listdir(plgn.location)
     try:
         link_downloader(what,param)
     except DownloadException as e:
-        return  str(e.msg)
+        logger.debug(str(e))
+        return str(e) 
     plgn.new = os.listdir(plgn.location)
-    final = [i for i in plgn.new if i not in plgn.old]
-    return "Done downloading "+ "\n" +"\n".join(final)
+    #final = [i for i in plgn.new if i not in plgn.old]
+    if downloaded_list:
+        final = "\n".join(downloaded_list)
+        downloaded_list=[]
+    return "Done downloading "+ "\n" + final
 
 @plgn.command('queue add <(?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)> *(?P<param>[aA]+)?')
 def queue(data,what,param):
@@ -110,6 +125,7 @@ def saveplaylist(data, playid):
 @plgn.command('startplaylist')
 def continueplaylist(*args, **kwargs):
     """ DONT USE THIS """
+    global downloaded_list
     playids = [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i ]
     logger.debug(playids)
     for i in  playids:
@@ -119,11 +135,11 @@ def continueplaylist(*args, **kwargs):
         except:
             pass
         finally:
-            logger.info('done Downloading id->' +i)
+            logger.info('Done downloading id->' +i)
+            final  = "\n".join(downloaded_list)
+            downloaded_list=[]
+            return "Done downloading. New downloads include "+final
             
-
-
-
 @plgn.command('begin')
 def begin(data,what = None):
     if not os.access(plgn.queued_links,os.F_OK):
@@ -134,7 +150,6 @@ def begin(data,what = None):
         os.mkdir(plgn.location)
     data = links.split(",")
     data = data[:-1]
-    plgn.old=os.listdir(plgn.location)
     output=[]
     for link in data:       
         if not link==" " or not link == "":
@@ -150,8 +165,9 @@ def begin(data,what = None):
         with open(plgn.queued_links,'w') as f:
             f.write(",".join(data))
             f.write(",")
-    plgn.new = os.listdir(plgn.location)
-    final = set(plgn.new) - set(plgn.old) 
+    global downloaded_list
+    final = downloaded_list
+    downloaded_list = []
     errors = ['Link = '+str(i) + '\n' + 'Error = '+str(j) for i,j in output if j!='1' ]
     if len(errors)==0:
         msg = "Done downloading \n {0}".format("\n".join(final))
@@ -222,8 +238,6 @@ def init(config=None):
         plgn.playlistsfile = config.get('playlistsfile', 'playlists.txt')
         if not os.path.exists(plgn.playlistsfile):
             open(plgn.playlistsfile,'w')
-    plgn.old = []
-    plgn.new = []
 
 @plgn.command('ip')
 def ip(data, what=None):
