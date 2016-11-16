@@ -287,7 +287,8 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                     self.maxcount[id(func)] -= 1
                 prestart()
                 ret = func()
-                self.outputs.append( ["random", ret])
+                if ret:
+                    self.outputs.append( ["random", ret])
                 postdone()
                 if self.maxcount[id(func)] != None:
                     self.maxcount[id(func)] += 1
