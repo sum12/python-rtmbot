@@ -22,8 +22,8 @@ def exercise(data, **details):
         return 'Failed to inform the server, please try again'
 
 @plgn.schedule(repeat(25*60), maximum=1)
-def ping(data, **details):
-    r = requests.get(URL, verify=False)
+def ping():
+    r = requests.get(plgn.URL, verify=False)
 
 
 @plgn.setupmethod
