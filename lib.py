@@ -47,7 +47,7 @@ def recr(curnt,nxt=None):
 # negative date. Also if the script started at 43 sec then the list would always start from
 # 43 sec thus 0-43 would be always missed.
 
-def rotrng(prevbits, limit,rotBy=None,rotTo=None):
+def rotrng(limit,rotBy=None,rotTo=None):
     def gnr(limit, rotBy, rotTo):
         lst = None
         try:
@@ -56,11 +56,20 @@ def rotrng(prevbits, limit,rotBy=None,rotTo=None):
         except:
             lst=limit
         if not rotBy and rotTo:
-            rotBy = lst.index(rotTo)
+            if rotTo in lst:
+                rotBy = lst.index(rotTo)
+            else:
+                prev = lst[0]
+                for cur in lst[1:]:
+                    if cur < rotTo:
+                        prev = cur
+                    else:
+                        break
+                rotBy = lst.index(prev) + 1
         yield lst[rotBy:]
         while 1:
             yield lst
-    return (lambda z = gnr(limit, rotBy, rotTo): next(z))
+    return (lambda prevbits,z=gnr(limit, rotBy, rotTo): next(z))
 
 # DOC(sumitj) helper function 
 def make_cron(*s):
@@ -85,15 +94,16 @@ def make_cron(*s):
     return bit
 
 def getdays(mnth, year):
+    # + 1 to make it compatible for range
     if mnth == 2 :
         if (year % 400 == 0 or year % 4 == 0):
-            return 29
+            return 29 + 1
         else:
-            return 28
-    elif mnth in [1,3,5,7,8,10,11]:
-            return 31
+            return 28 + 1
+    elif mnth in [1,3,5,7,8,10,12]:
+            return 31 + 1
     else:   
-        return 30
+        return 30 + 1
 
 
 def cron(**dt):
@@ -115,7 +125,7 @@ def cron(**dt):
         # for february fix the progam needs to be restarted once in feb 
         # so that 'day' is back to 28/29. And fix for iteration purpose
         # will be, start rotating list.
-        totdays = range(1,getdays(rotatr.month,rotatr.year)+1)
+        totdays = range(1,getdays(rotatr.month,rotatr.year))
         day = ('day',rotrng(totdays,rotTo=rotatr.day), totdays)
         d.insert(2, day)
 
@@ -164,6 +174,8 @@ def cron(**dt):
             global SELECTEDDATE
             SELECTEDDATE = nxt
             logger.debug('returning once from checker should never print negative or invalid date, unless restarted')
+            # global SELECTEDDATE
+            # SELECTEDDATE = nxt
             yield wait_time
     return checker()
 
@@ -172,9 +184,9 @@ SELECTEDDATE = None
 
 
 def rangecreater(d, realrange):
+    
     starrex = "^(?P<star>\*)/(?P<freq>\d+)$"
     rangerex = "^(?P<start>\d+)-(?P<end>\d+)(/(?P<freq>\d+))?$"
-    lovfreq = "^(?P<lov>(\d+,?)+)/(?P<freq>\d+)$"
     if d['star']:
         return range(*realrange)
     if d['starfreq']:
@@ -189,33 +201,96 @@ def rangecreater(d, realrange):
         if z:
             vals = z.groupdict()
             freq = int(vals['freq'] or 1)
-            start = int(vals['start'])
-            end = int(vals['end'])
+            start = max(realrange[0], int(vals['start']))
+            # +1 is cox realrange[1] is adjusted,
+            # range(1,10), will not give 10
+            end = min(realrange[1], int(vals['end'])+1)
             if start and end and start <= end:
+                if start == end: 
+                    return [start]
                 return range(start, end, freq)
     if d['lov']:
-        return sorted(map(int, d['lov'].split(',')))
+        provided = sorted(map(int, d['lov'].split(',')))
+        provided[-1] = provided[-1] + 1
+        start = max(realrange[0], min(provided))
+        end = min(realrange[1], max(provided))
+        if start == end: 
+            return [start]
+        return range(start, end)
+    raise Exception('Could not categorize cron piece')
 
 
+# Ranges of values are not checked, but rather automcatically truncated if
+# found outside of the range.
+# In case static values are provided and turn out to be invalid dates. make_cron
+# will generate a negative or invalid date. Thus leading to a controlled failure.
+#
+# Divide the cronstring by space, and scan-check all parts are present and
+# have no negative values. 
+# Generate range_string for each part, using rotrng the ranges to correct position
+# and return the corresponding generators for each
+#
 def cronfromstring(cronstr):
+    """
+    pasrse and create cron flipflop
+    """
+    rex =    "^(?P<starfreq>\*/\d+)$|\
+^(?P<star>\*)$|\
+^(?P<rangefreq>\d+-\d+/\d+)$|\
+^(?P<range>\d+-\d+)$|\
+^(?P<lov>(\d+,?)+)$"
     order = ('minute', 'hour', 'dom', 'month', 'dow')
-    ranges = ((0,60), (0,24), None, (0,12), (0,7))
+    ranges = [[0,60], [0,24], None, [1,13], [0,7]]
     cronstr = cronstr.split()
-    def schfunc():
-        pass
 
-    def calcdays(year, month, end):
-        daysinthismonth = getdays(year, month) 
-#        0,1,2,3,4,5,6
-#      0,1,2,3,4,5,6,7
-        while day <= daysinthismonth :
-        while(date(month, year day).weekday() + 1) in args['dow'] and )
-            day+=1
-        yield day
-        day+=1
-        
+    # parse and store the groupdict of the parse parts of the cronstring
+    todict = dict(zip(order, map(
+            lambda x: re.match(rex,x).groupdict() if re.match(rex, x) else None,
+            cronstr)))
+    # if either not all parts are present or if any part is none ie all parts
+    # should have 'True' value. (bool(None) is False)
+    if set(order) != set(todict.keys()) or not all(todict.values()):
+        raise Exception('Invalid cronstring')
 
-    return schfunc
+    def calcdays(prevbits):
+        # every bit of recr function receives input.
+        # these are outputs from bits before it.
+        # cronbits are: year, month, day, minute, second
+        # print prevbits
+        (month, (year, endofbits)) = prevbits
+        #cron send number from 0-7, where 0 and 7 both mean sunday
+        #  0,1,2,3,4,5,6
+        #0,1,2,3,4,5,6,7
+
+        # daysinthismonth = rotrng(rangecreater(daysparsed, [1,getdays(year, month)]), rotTo=now.day)
+        daysinthismonth = (rangecreater(daysparsed, [1,getdays(month, year)]))
+        # print daysinthismonth, getdays(month, year)
+
+        # this loop iterate maximum 7 times before yielding a value
+        # not worth optimizing
+
+        # print daysofweek
+        for day in daysinthismonth:
+            if date( year, month, day).weekday() + 1 not in daysofweek:
+                continue
+            yield day
+
+    now = datetime.now()
+    kwargs = {}
+    if not todict['minute']['star']: 
+        kwargs['minute'] = rangecreater(todict['minute'], ranges[0])
+    if not todict['hour']['star']:
+        kwargs['hour'] = rangecreater(todict['hour'], ranges[1])
+    if not todict['month']['star']:
+        kwargs['month'] = rangecreater(todict['month'], ranges[3])
+
+    kwargs['day'] = calcdays 
+    daysparsed = todict['dom']
+    kwargs['second'] = [1]
+    daysofweek = rangecreater(todict['dow'], ranges[4])
+    
+
+    return cron(**kwargs)
 
 
 # DOC(sumitj) awaiting deprecation
