@@ -54,15 +54,16 @@ def downloader_hook(d):
     global downloaded_list
     if d['status']=='finished' and d.get('downloaded_bytes', False):
         downloaded_list.append(os.path.split(os.path.abspath(d['filename']))[1])
-        
-#This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
-def link_downloader(*a):
-    args = [str(i) for i in a]
+
+
+def makeoptions(*a):
+    args = [None]+[str(i) for i in a]
     y = {
             'outtmpl':plgn.location_video,
             'logger':ydl_logger,
             'nooverwrites':'True',
             'progress_hooks':[downloader_hook],
+            'nopostoverwrites':True
             }
     if len(args)>1 and (args[1] == 'a' or args[1]=='A'):
         y.update({
@@ -74,8 +75,12 @@ def link_downloader(*a):
                 })
     if len(args)>2 and ('k' in args[2].lower()): y.update({ 'keepvideo':True })
     if len(args)>3 and ('i' in args[3].lower()): y.update({ 'ignoreerrors':True })
-    link = str(args[0])
-    ydl= youtube_dl.YoutubeDL(y)
+    return y
+
+#This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
+def link_downloader(args, options):
+    link = str(args)
+    ydl= youtube_dl.YoutubeDL(options)
     try:
         ydl.download([link])
     except Exception as e:
@@ -90,7 +95,7 @@ def download(data, what,param):
         os.mkdir(plgn.location)
     plgn.old=os.listdir(plgn.location)
     try:
-        link_downloader(what,param)
+        link_downloader(what,makeoptions(param))
     except DownloadException as e:
         logger.debug(str(e))
         return str(e) 
@@ -131,7 +136,7 @@ def continueplaylist(*args, **kwargs):
     for i in  playids:
         try:
             logger.info('starting for id->' + i)
-            link_downloader(i, *'aki')
+            link_downloader(i, makeoptions(*'aki'))
         except:
             pass
         finally:
