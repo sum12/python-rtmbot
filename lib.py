@@ -280,12 +280,12 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                     while self.maxcount[id(func)] != None and not self.maxcount[id(func)]:
                         t = max(t-2, 1)
                         logger.debug('delaying %s' % func.__name__)
+                        if self.maxcount[id(func)] != None:
+                            self.maxcount[id(func)] -= 1
                         yield -2
                     yield t
             @wraps(func)
             def context():
-                if self.maxcount[id(func)] != None:
-                    self.maxcount[id(func)] -= 1
                 prestart()
                 ret = func()
                 if ret:
