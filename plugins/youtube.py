@@ -63,13 +63,13 @@ def makeoptions(*a):
             'logger':ydl_logger,
             'nooverwrites':'True',
             'progress_hooks':[downloader_hook],
-            'nopostoverwrites':True
             }
     if len(args)>1 and (args[1] == 'a' or args[1]=='A'):
         y.update({
                 'format': 'bestaudio/best',
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
+                    'nopostoverwrites':'True'
                     'preferredcodec': 'mp3',
                     'preferredquality': '192',}]
                 })
