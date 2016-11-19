@@ -161,10 +161,13 @@ def cron(**dt):
                     logger.debug('got negative')
                     logged2 = True
                 continue
+            global SELECTEDDATE
+            SELECTEDDATE = nxt
             logger.debug('returning once from checker should never print negative or invalid date, unless restarted')
             yield wait_time
     return checker()
 
+SELECTEDDATE = None
 
 # DOC(sumitj) awaiting deprecation
 def atTime(*dt):
@@ -280,9 +283,9 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                     while self.maxcount[id(func)] != None and not self.maxcount[id(func)]:
                         t = max(t-2, 1)
                         logger.debug('delaying %s' % func.__name__)
-                        if self.maxcount[id(func)] != None:
-                            self.maxcount[id(func)] -= 1
                         yield -2
+                    if self.maxcount[id(func)] != None:
+                        self.maxcount[id(func)] -= 1
                     yield t
             @wraps(func)
             def context():
