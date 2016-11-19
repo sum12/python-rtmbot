@@ -279,6 +279,7 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                 for t in schfunc:
                     while self.maxcount[id(func)] != None and not self.maxcount[id(func)]:
                         t = max(t-2, 1)
+                        logger.debug('delaying %s' % func.__name__)
                         yield -2
                     yield t
             @wraps(func)

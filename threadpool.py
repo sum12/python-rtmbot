@@ -69,7 +69,6 @@ class ThreadPool:
         def waiter():
             for t in checker:
                 while t < 0:
-                    logger.info('delaying exeution')
                     self.term_cond.wait(t*-1)
                     t = next(checker)
                 if t > 10:   # Not good enough! as t can vary

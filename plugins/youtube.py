@@ -51,8 +51,8 @@ class DownloadException(Exception):
         self.exc_info = exc_info
 
 def downloader_hook(d):
-    global donwloaded_list
-    if d['status']=='finished':
+    global downloaded_list
+    if d['status']=='finished' and d.get('downloaded_bytes', False):
         downloaded_list.append(os.path.split(os.path.abspath(d['filename']))[1])
         
 #This function will help reduce the redundacny of youtube_dl part of downloader everywhere !
@@ -136,9 +136,13 @@ def continueplaylist(*args, **kwargs):
             pass
         finally:
             logger.info('Done downloading id->' +i)
-            final  = "\n".join(downloaded_list)
-            downloaded_list=[]
-            return "Done downloading. New downloads include "+final
+            if downloaded_list:
+                final  = "\n".join(downloaded_list)
+                downloaded_list=[]
+                return "Done downloading. New downloads include "+final
+            else:
+                return "No New Downloads"
+
             
 @plgn.command('begin')
 def begin(data,what = None):
