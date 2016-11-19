@@ -69,7 +69,7 @@ def makeoptions(*a):
                 'format': 'bestaudio/best',
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
-                    'nopostoverwrites':'True'
+                    'nopostoverwrites':'True',
                     'preferredcodec': 'mp3',
                     'preferredquality': '192',}]
                 })
