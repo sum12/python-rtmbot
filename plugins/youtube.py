@@ -53,8 +53,12 @@ class DownloadException(Exception):
 
 def downloader_hook(d):
     global downloaded_list
-    if d['status']=='finished' and d.get('downloaded_bytes', False):
-        downloaded_list.append(os.path.split(os.path.abspath(d['filename']))[1])
+    if d.get('status',None) =='finished' and d.get('downloaded_bytes', False):
+        downloaded_list.append(os.path.split(d['filename'])[-1])
+    if d.get('status', None) == 'finished':
+        temp_name = youtube_dl.utils.prepend_extension( d['filename'], 'temp')
+        if os.path.exists(temp_name):
+            downloaded_list.append('unable to rename %s' % temp_name)
 
 
 def makeoptions(*a):
@@ -63,6 +67,7 @@ def makeoptions(*a):
             'outtmpl':plgn.location_video,
             'logger':ydl_logger,
             'nooverwrites':'True',
+            'prefer_ffmpeg':'True',
             'progress_hooks':[downloader_hook],
             }
     if len(args)>1 and (args[1] == 'a' or args[1]=='A'):
