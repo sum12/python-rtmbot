@@ -8,12 +8,13 @@ logger = logging.getLogger('bot.youtube')
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('youtube')
 
-ydl_handler = RotatingFileHandler('youtubedl.log', 'a', 1 * 1024 * 1024)
-ydl_handler.propagate = False
-ydl_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
 ydl_logger = logging.getLogger('youtubedl')
-ydl_logger.addHandler(ydl_handler)
-ydl_logger.setLevel(logging.DEBUG)
+if len(ydl_logger.handlers) < 1:
+    ydl_handler = RotatingFileHandler('youtubedl.log', 'a', 2 * 1024 * 1024)
+    ydl_handler.propagate = False
+    ydl_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
+    ydl_logger.addHandler(ydl_handler)
+    ydl_logger.setLevel(logging.DEBUG)
 
 # downloaded_list is a global variable for storing the names of the videos which are downloaded
 # by link_downloader. This is used for parsing video names form downloader_hook to the download
