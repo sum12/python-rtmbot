@@ -146,14 +146,12 @@ def continueplaylist(*args, **kwargs):
             if downloaded_list:
                 final  = "\n".join(downloaded_list)
                 downloaded_list=[]
-                #return "Done downloading. New downloads include "+final
             else:
                 final = "No new downloads"
-                #return "No New Downloads"
             out[str(i)]=final
     output = '' #defined for generating the finally returnable string from all the dict(key,value) tuples
     for r in out.items():
-        output = output+"For the playlist id"+r[0]+"\n"+r[1]+"\n"
+        output = output+"For the playlist id"+"\n".join(r)+"\n"
     return output
         
             
