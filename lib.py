@@ -1,7 +1,7 @@
 import time
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from  random import randint, randrange
 from collections import namedtuple, defaultdict
 import re
@@ -18,7 +18,7 @@ logger = logging.getLogger('bot.lib')
 
 
 def rr(lst):
-    def rry():
+    def rry(*args, **kwargs):
         x = lst[0]
         for y in lst[1:]:
             yield randrange(x,y)
@@ -35,7 +35,7 @@ def rr(lst):
 def recr(curnt,nxt=None):
     rt = nxt.next() if nxt!=None else 0
     while 1:
-        for i in curnt(): 
+        for i in curnt(rt): 
             yield i,rt
         if nxt:
             rt = nxt.next() 
@@ -56,11 +56,20 @@ def rotrng(limit,rotBy=None,rotTo=None):
         except:
             lst=limit
         if not rotBy and rotTo:
-            rotBy = lst.index(rotTo)
+            if rotTo in lst:
+                rotBy = lst.index(rotTo)
+            else:
+                prev = lst[0]
+                for cur in lst[1:]:
+                    if cur < rotTo:
+                        prev = cur
+                    else:
+                        break
+                rotBy = lst.index(prev) + 1
         yield lst[rotBy:]
         while 1:
             yield lst
-    return (lambda z = gnr(limit, rotBy, rotTo): next(z))
+    return (lambda prevbits,z=gnr(limit, rotBy, rotTo): next(z))
 
 # DOC(sumitj) helper function 
 def make_cron(*s):
@@ -75,25 +84,26 @@ def make_cron(*s):
                 # evaluation leads to wrong values being evalated,
                 # this is one way to have the values stuck to function.
                 int(lst)
-                bit=recr(lambda act=lst : range(act),bit)
+                bit=recr(lambda prevbits, act=lst : range(act),bit)
             except:
                 try:
                     iter(lst)   
-                    bit=recr(lambda act=lst: act, bit)
+                    bit=recr(lambda prevbits, act=lst: act, bit)
                 except:
                     raise Exception('Unable to make cron for %s' % lst) 
     return bit
 
 def getdays(mnth, year):
+    # + 1 to make it compatible for range
     if mnth == 2 :
         if (year % 400 == 0 or year % 4 == 0):
-            return 29
+            return 29 + 1
         else:
-            return 28
-    elif mnth in [1,3,5,7,8,10,11]:
-            return 31
+            return 28 + 1
+    elif mnth in [1,3,5,7,8,10,12]:
+            return 31 + 1
     else:   
-        return 30
+        return 30 + 1
 
 
 def cron(**dt):
@@ -115,7 +125,7 @@ def cron(**dt):
         # for february fix the progam needs to be restarted once in feb 
         # so that 'day' is back to 28/29. And fix for iteration purpose
         # will be, start rotating list.
-        totdays = range(1,getdays(rotatr.month,rotatr.year)+1)
+        totdays = range(1,getdays(rotatr.month,rotatr.year))
         day = ('day',rotrng(totdays,rotTo=rotatr.day), totdays)
         d.insert(2, day)
 
@@ -164,10 +174,124 @@ def cron(**dt):
             global SELECTEDDATE
             SELECTEDDATE = nxt
             logger.debug('returning once from checker should never print negative or invalid date, unless restarted')
+            # global SELECTEDDATE
+            # SELECTEDDATE = nxt
             yield wait_time
     return checker()
 
 SELECTEDDATE = None
+
+
+
+def rangecreater(d, realrange):
+    
+    starrex = "^(?P<star>\*)/(?P<freq>\d+)$"
+    rangerex = "^(?P<start>\d+)-(?P<end>\d+)(/(?P<freq>\d+))?$"
+    if d['star']:
+        return range(*realrange)
+    if d['starfreq']:
+        z = re.match(starrex, d['starfreq'])
+        if z:
+            freq = z.groupdict()['freq']
+            freq = int(freq)
+            realrange.append(freq)
+            return range(*realrange)
+    if d['range'] or d['rangefreq']:
+        z = re.match(rangerex, d['range'] or d['rangefreq'])
+        if z:
+            vals = z.groupdict()
+            freq = int(vals['freq'] or 1)
+            start = max(realrange[0], int(vals['start']))
+            # +1 is cox realrange[1] is adjusted,
+            # range(1,10), will not give 10
+            end = min(realrange[1], int(vals['end'])+1)
+            if start and end and start <= end:
+                if start == end: 
+                    return [start]
+                return range(start, end, freq)
+    if d['lov']:
+        provided = sorted(map(int, d['lov'].split(',')))
+        provided[-1] = provided[-1] + 1
+        start = max(realrange[0], min(provided))
+        end = min(realrange[1], max(provided))
+        if start == end: 
+            return [start]
+        return range(start, end)
+    raise Exception('Could not categorize cron piece')
+
+
+# Ranges of values are not checked, but rather automcatically truncated if
+# found outside of the range.
+# In case static values are provided and turn out to be invalid dates. make_cron
+# will generate a negative or invalid date. Thus leading to a controlled failure.
+#
+# Divide the cronstring by space, and scan-check all parts are present and
+# have no negative values. 
+# Generate range_string for each part, using rotrng the ranges to correct position
+# and return the corresponding generators for each
+#
+def cronfromstring(cronstr):
+    """
+    pasrse and create cron flipflop
+    """
+    rex =    "^(?P<starfreq>\*/\d+)$|\
+^(?P<star>\*)$|\
+^(?P<rangefreq>\d+-\d+/\d+)$|\
+^(?P<range>\d+-\d+)$|\
+^(?P<lov>(\d+,?)+)$"
+    order = ('minute', 'hour', 'dom', 'month', 'dow')
+    ranges = [[0,60], [0,24], None, [1,13], [0,7]]
+    cronstr = cronstr.split()
+
+    # parse and store the groupdict of the parse parts of the cronstring
+    todict = dict(zip(order, map(
+            lambda x: re.match(rex,x).groupdict() if re.match(rex, x) else None,
+            cronstr)))
+    # if either not all parts are present or if any part is none ie all parts
+    # should have 'True' value. (bool(None) is False)
+    if set(order) != set(todict.keys()) or not all(todict.values()):
+        raise Exception('Invalid cronstring')
+
+    def calcdays(prevbits):
+        # every bit of recr function receives input.
+        # these are outputs from bits before it.
+        # cronbits are: year, month, day, minute, second
+        # print prevbits
+        (month, (year, endofbits)) = prevbits
+        #cron send number from 0-7, where 0 and 7 both mean sunday
+        #  0,1,2,3,4,5,6
+        #0,1,2,3,4,5,6,7
+
+        # daysinthismonth = rotrng(rangecreater(daysparsed, [1,getdays(year, month)]), rotTo=now.day)
+        daysinthismonth = (rangecreater(daysparsed, [1,getdays(month, year)]))
+        # print daysinthismonth, getdays(month, year)
+
+        # this loop iterate maximum 7 times before yielding a value
+        # not worth optimizing
+
+        # print daysofweek
+        for day in daysinthismonth:
+            if date( year, month, day).weekday() + 1 not in daysofweek:
+                continue
+            yield day
+
+    now = datetime.now()
+    kwargs = {}
+    if not todict['minute']['star']: 
+        kwargs['minute'] = rangecreater(todict['minute'], ranges[0])
+    if not todict['hour']['star']:
+        kwargs['hour'] = rangecreater(todict['hour'], ranges[1])
+    if not todict['month']['star']:
+        kwargs['month'] = rangecreater(todict['month'], ranges[3])
+
+    kwargs['day'] = calcdays 
+    daysparsed = todict['dom']
+    kwargs['second'] = [1]
+    daysofweek = rangecreater(todict['dow'], ranges[4])
+    
+
+    return cron(**kwargs)
+
 
 # DOC(sumitj) awaiting deprecation
 def atTime(*dt):
@@ -197,6 +321,8 @@ class Plugin(object):
         self.crontable = []
         self.name = name 
         self.maxcount = {}
+        self.schedules = {}
+        self.funcids = {}
 
         @self.command('help( (?P<plugin>\w+)( (?P<action>\w+))?)?', help = 'help')
         def helper(data, plugin, action):
@@ -235,15 +361,28 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
 
 
     def setup(self, config=None):
-        self.plgnid = config['plgnid']
+        if not config:
+            self.plgnid = getattr(self, 'plgnid', self.name)
+            self.cronconfig = {}
+        else:
+            self.plgnid = config['plgnid']
+            self.cronconfig = config.get('cron', None)
+            print self.schedules.values()
+            for funcid, schfunc in self.schedules.items()[:]:
+                func = self.funcids[funcid]
+                try:
+                    self.schedules[funcid] = schfunc or cronfromstring(self.cronconfig[func.__name__])
+                except KeyError:
+                    log.error('%s from %s has no cron, cron will not be scheduled' % (func.__name__, self.name))
+                except Exception:
+                    raise Exception('unable to create an schedule for %s' % func.__name__)
+            
 
     def setupmethod(self, func):
         def wrapper(config=None):
-            if not config:
-                self.plgnid = getattr(self, 'plgnid', self.name)
-            else:
-                self.plgnid = config['plgnid']
+            self._setup(config)
             func(config)
+        self._setup = self.setup
         self.setup = wrapper 
         return wrapper
 
@@ -275,14 +414,16 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                 if ret:
                     self.outputs.append([data['channel'], ret ])
 
-    def schedule(self, schfunc, maximum=None, prestart=NOOP, postdone=NOOP):
-        def wrapper(func):
+    def schedule(self, schfunc=None, maximum=None, prestart=NOOP, postdone=NOOP):
+        def wrapper(func, schfunc=schfunc):
             self.maxcount[id(func)] = maximum
+            self.schedules[id(func)] = schfunc
+            self.funcids[id(func)] = func
             def limittomax():
-                for t in schfunc:
+                for t in self.schedules[id(func)]:
                     while self.maxcount[id(func)] != None and not self.maxcount[id(func)]:
                         t = max(t-2, 1)
-                        logger.debug('delaying %s' % func.__name__)
+                        # logger.debug('delaying %s' % func.__name__)
                         yield -2
                     if self.maxcount[id(func)] != None:
                         self.maxcount[id(func)] -= 1
