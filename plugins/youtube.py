@@ -137,6 +137,8 @@ def saveplaylist(data, playid):
 def continueplaylist(*args, **kwargs):
     """ DONT USE THIS """
     global downloaded_list
+    #out = {} defined for storing return values of all the playlist ids
+    out = {}
     playids = [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i ]
     logger.debug(playids)
     for i in  playids:
@@ -150,10 +152,14 @@ def continueplaylist(*args, **kwargs):
             if downloaded_list:
                 final  = "\n".join(downloaded_list)
                 downloaded_list=[]
-                return "Done downloading. New downloads include "+final
             else:
-                return "No New Downloads"
-
+                final = "No new downloads"
+            out[str(i)]=final
+    output = '' #defined for generating the finally returnable string from all the dict(key,value) tuples
+    for r in out.items():
+        output = output+"For the playlist id"+"\n".join(r)+"\n"
+    return output
+        
             
 @plgn.command('begin')
 def begin(data,what = None):
