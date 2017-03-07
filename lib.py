@@ -18,7 +18,7 @@ logger = logging.getLogger('bot.lib')
 
 
 def rr(lst):
-    def rry():
+    def rry(*args, **kwargs):
         x = lst[0]
         for y in lst[1:]:
             yield randrange(x,y)
@@ -321,6 +321,8 @@ class Plugin(object):
         self.crontable = []
         self.name = name 
         self.maxcount = {}
+        self.schedules = {}
+        self.funcids = {}
 
         @self.command('help( (?P<plugin>\w+)( (?P<action>\w+))?)?', help = 'help')
         def helper(data, plugin, action):
@@ -359,15 +361,28 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
 
 
     def setup(self, config=None):
-        self.plgnid = config['plgnid']
+        if not config:
+            self.plgnid = getattr(self, 'plgnid', self.name)
+            self.cronconfig = {}
+        else:
+            self.plgnid = config['plgnid']
+            self.cronconfig = config.get('cron', None)
+            print self.schedules.values()
+            for funcid, schfunc in self.schedules.items()[:]:
+                func = self.funcids[funcid]
+                try:
+                    self.schedules[funcid] = schfunc or cronfromstring(self.cronconfig[func.__name__])
+                except KeyError:
+                    log.error('%s from %s has no cron, cron will not be scheduled' % (func.__name__, self.name))
+                except Exception:
+                    raise Exception('unable to create an schedule for %s' % func.__name__)
+            
 
     def setupmethod(self, func):
         def wrapper(config=None):
-            if not config:
-                self.plgnid = getattr(self, 'plgnid', self.name)
-            else:
-                self.plgnid = config['plgnid']
+            self._setup(config)
             func(config)
+        self._setup = self.setup
         self.setup = wrapper 
         return wrapper
 
@@ -399,14 +414,16 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                 if ret:
                     self.outputs.append([data['channel'], ret ])
 
-    def schedule(self, schfunc, maximum=None, prestart=NOOP, postdone=NOOP):
-        def wrapper(func):
+    def schedule(self, schfunc=None, maximum=None, prestart=NOOP, postdone=NOOP):
+        def wrapper(func, schfunc=schfunc):
             self.maxcount[id(func)] = maximum
+            self.schedules[id(func)] = schfunc
+            self.funcids[id(func)] = func
             def limittomax():
-                for t in schfunc:
+                for t in self.schedules[id(func)]:
                     while self.maxcount[id(func)] != None and not self.maxcount[id(func)]:
                         t = max(t-2, 1)
-                        logger.debug('delaying %s' % func.__name__)
+                        # logger.debug('delaying %s' % func.__name__)
                         yield -2
                     if self.maxcount[id(func)] != None:
                         self.maxcount[id(func)] -= 1
