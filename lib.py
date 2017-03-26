@@ -240,7 +240,7 @@ def cronfromstring(cronstr):
 ^(?P<range>\d+-\d+)$|\
 ^(?P<lov>(\d+,?)+)$"
     order = ('minute', 'hour', 'dom', 'month', 'dow')
-    ranges = [[0,60], [0,24], None, [1,13], [0,7]]
+    ranges = [[0,60], [0,24], None, [1,13], [0,8]]
     cronstr = cronstr.split()
 
     # parse and store the groupdict of the parse parts of the cronstring
@@ -272,6 +272,9 @@ def cronfromstring(cronstr):
         # print daysofweek
         for day in daysinthismonth:
             if date( year, month, day).weekday() + 1 not in daysofweek:
+#                print '%s,'% day,
+#                print daysofweek,
+#                print date( year, month, day),date( year, month, day).weekday()
                 continue
             yield day
 
