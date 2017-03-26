@@ -2,6 +2,7 @@
 /rtmbot.conf
 env
 .venv
+*.log.*
 *.log
 *.csv
 *.txt
