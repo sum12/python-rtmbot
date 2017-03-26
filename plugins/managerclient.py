@@ -20,9 +20,10 @@ def exercise(data, **details):
     else:
         return 'Failed to inform the server, please try again'
 
-@plgn.schedule(repeat(5), maximum=1)
+@plgn.schedule(maximum=1)
 def ping():
     for url in plgn.URLS:
+        logger.info('pinging %s' % url)
         r = requests.get(url, verify=False)
 
 
