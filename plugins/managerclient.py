@@ -9,24 +9,25 @@ plgn = Plugin('managerclient')
 
 
 
-URL = ''
 
 @plgn.command('exe (?P<config>(\d+,)*\d+)')
 def exercise(data, **details):
     """ Store exe related data """
-    URL = plgn.URL + '/daily' 
+    URL = plgn.managerurl + '/daily' 
     r = requests.post(URL, data={'type':'exercise', 'data':details['config']}, verify=False)
     if r.status_code == 201:
         return 'Ok'
     else:
         return 'Failed to inform the server, please try again'
 
-@plgn.schedule(repeat(25*60), maximum=1)
+@plgn.schedule(repeat(5), maximum=1)
 def ping():
-    r = requests.get(plgn.URL, verify=False)
+    for url in plgn.URLS:
+        r = requests.get(url, verify=False)
 
 
 @plgn.setupmethod
 def init(config):
-    plgn.URL = config['url']
+    plgn.URLS = config.get( 'urls' ,[config.get('url')])
+    plgn.managerurl = config.get('managerurl', config.get('url'))
 
