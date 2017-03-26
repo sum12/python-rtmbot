@@ -9,4 +9,4 @@ slackclient==0.16
 watchdog==0.8.3
 websocket-client==0.32.0
 wsgiref==0.1.2
-youtube-dl==2016.01.01
+youtube-dl
