@@ -1,4 +1,4 @@
-import time,os,subprocess
+import os,subprocess
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
@@ -132,7 +132,7 @@ def saveplaylist(data, playid):
     open(plgn.playlistsfile,'a').write('\n{0}'.format(playid))
     return 'Saved playid {0}'.format(playid)
 
-@plgn.schedule(cron(hour=range(2,6)+range(10,18), minute=[0],second=[0]), maximum=1)
+@plgn.schedule(maximum=1)
 @plgn.command('startplaylist')
 def continueplaylist(*args, **kwargs):
     """ DONT USE THIS """
@@ -150,17 +150,14 @@ def continueplaylist(*args, **kwargs):
         finally:
             logger.info('Done downloading id->' +i)
             if downloaded_list:
-                final  = "\n".join(downloaded_list)
+                out[str(i)]  = "\n".join(downloaded_list)
                 downloaded_list=[]
-            else:
-                final = "No new downloads"
-            out[str(i)]=final
     output = '' #defined for generating the finally returnable string from all the dict(key,value) tuples
     for r in out.items():
         output = output+"For the playlist id"+"\n".join(r)+"\n"
     return output
-        
-            
+
+
 @plgn.command('begin')
 def begin(data,what = None):
     if not os.access(plgn.queued_links,os.F_OK):
