@@ -9,9 +9,9 @@ plgn = Plugin('watch')
 
 
 
-"
+"""
 http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid-in-python
-"
+"""
 if os.name == 'posix':
     def pid_exists(pid):
         """Check whether pid exists in the current process table."""
@@ -41,10 +41,11 @@ else:
 
 @plgn.command('watchprocess (?P<pid>(\d+))')
 def add_pid(data, **details):
-    plgn.pid.append(details['pid'])
+    plgn.pids.append(details['pid'])
 
 
-def process_exists_check(data, **details):
+@plgn.schedule(maximum=1)
+def process_exists_check():
     """Keep an eye on a process, and inform if is dead"""
     ret = []
     for pid in plgn.pids[:]:
