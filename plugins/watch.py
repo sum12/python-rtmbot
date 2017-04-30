@@ -4,7 +4,6 @@ from itertools import repeat
 from lib import Plugin, cron
 import logging
 logger = logging.getLogger('bot.managerclient')
-logger.setLevel(logging.DEBUG)
 plgn = Plugin('watch')
 
 
@@ -41,7 +40,13 @@ else:
 
 @plgn.command('watchprocess (?P<pid>(\d+))')
 def add_pid(data, **details):
-    plgn.pids.append(details['pid'])
+    try:
+        plgn.pids.append(int(details['pid']))
+    except Exception as e:
+        logger.debug(str(e))
+        return 'Sorry, Could not add'
+    else:
+        return 'Okay'
 
 
 @plgn.schedule(maximum=1)
@@ -49,8 +54,12 @@ def process_exists_check():
     """Keep an eye on a process, and inform if is dead"""
     ret = []
     for pid in plgn.pids[:]:
-        if not pid_exists(pid):
-            ret.append(plgn.pids.pop(pid))
+        try:
+            if not pid_exists(pid):
+                ret.append(str(plgn.pids.pop(plgn.pids.index(pid))))
+        except Exception as e:
+            logger.info('Something is wrong with pid checking: '+str(e))
+            return 'Process watching is broken'
     if ret:
         return "Following pids are dead: %s" % ",".join(ret)
 
