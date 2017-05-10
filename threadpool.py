@@ -4,7 +4,7 @@ from threading import Thread, Event
 import logging
 import time
 
-logger = logging.getLogger('bot.pool')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 

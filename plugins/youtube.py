@@ -4,11 +4,11 @@ import logging
 from logging.handlers import RotatingFileHandler
 import re,youtube_dl,getpass,os
 from lib import Plugin, cron
-logger = logging.getLogger('bot.youtube')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('youtube')
 
-ydl_logger = logging.getLogger('youtubedl')
+ydl_logger = logging.getLogger(__name__)
 if len(ydl_logger.handlers) < 1:
     ydl_handler = RotatingFileHandler('youtubedl.log', 'a', 2 * 1024 * 1024)
     ydl_handler.propagate = False

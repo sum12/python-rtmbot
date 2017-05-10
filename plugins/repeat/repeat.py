@@ -3,7 +3,7 @@ import re
 
 from lib import Plugin, cron
 import logging
-logger = logging.getLogger('bot.repeat')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('repeat')
 plgn.__doc__ = "Demo/Dummy plugin"

@@ -5,7 +5,7 @@ from csv import DictReader, DictWriter
 import logging
 
 from lib import Plugin, cron
-logger = logging.getLogger('bot.share')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('share')
     

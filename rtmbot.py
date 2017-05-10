@@ -21,16 +21,18 @@ from slackclient import SlackClient
 import threadpool
 from threadpool import ThreadPool
 
-logger = logging.getLogger('bot')
+logger = logging.getLogger(__name__)
 logger.propagate = False
 
 def setup_logger(cfg):
-    if 'LOGFILE' in cfg:
+    if 'logconf' in cfg:
+        logging.fileConfig(cfg['logconf'])
+    elif 'LOGFILE' in cfg:
         file_handler = RotatingFileHandler(cfg['LOGFILE'], 'a', 1 * 1024 * 1024, 10)
         file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
         file_handler.setLevel(getattr(logging, cfg['DEBUG']))
-    logger.setLevel(getattr(logging, cfg['DEBUG']))
-    logger.addHandler(file_handler)
+        logger.setLevel(getattr(logging, cfg['DEBUG']))
+        logger.addHandler(file_handler)
 
 def vvvv(*args, **kwargs):
     logger.debug(*args, **kwargs)

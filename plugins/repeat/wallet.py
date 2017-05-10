@@ -4,7 +4,7 @@ amount = {}
 import re,getpass,os,time
 
 from lib import Plugin, cron
-logger = logging.getLogger('bot.wallet')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('wallet')
 

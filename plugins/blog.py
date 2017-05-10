@@ -5,7 +5,7 @@ from  random import randint
 from lib import *
 import yaml
 
-logger = logging.getLogger('bot.blog')
+logger = logging.getLogger(__name__)
 plgn = Plugin('blog')
 
 # This is testcode for threadpool.py

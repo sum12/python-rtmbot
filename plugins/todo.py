@@ -2,7 +2,7 @@ import os
 import pickle
 from lib import Plugin
 import logging
-logger = logging.getLogger('bot.todo')
+logger = logging.getLogger(__name__)
 plgn = Plugin('todo')
 
 tasks = {}
