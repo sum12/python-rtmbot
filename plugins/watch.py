@@ -3,7 +3,7 @@ from itertools import repeat
 
 from lib import Plugin, cron
 import logging
-logger = logging.getLogger('bot.managerclient')
+logger = logging.getLogger(__name__)
 plgn = Plugin('watch')
 
 

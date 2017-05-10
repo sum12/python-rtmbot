@@ -14,7 +14,7 @@ from functools import wraps
 # Returning a function so that it can be reinitialized when
 # lst is exhausted.
 
-logger = logging.getLogger('bot.lib')
+logger = logging.getLogger(__name__)
 
 
 def rr(lst):

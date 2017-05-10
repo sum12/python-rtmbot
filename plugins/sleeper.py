@@ -2,7 +2,7 @@ import datetime as dt
 
 import logging
 from lib import *
-logger = logging.getLogger('bot.sleeper')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 plgn = Plugin('sleeper')
 
