@@ -326,9 +326,7 @@ class Plugin(object):
         self.maxcount = {}
         self.schedules = {}
         self.funcids = {}
-        self.logger = logging.getLogger('rtmbot.'+name)
-        self.debug = self.logger.debug
-        self.info = self.logger.info
+        self.logger = logging.getLogger('rtmbot.plugins.'+name)
 
         @self.command('help( (?P<plugin>\w+)( (?P<action>\w+))?)?', help = 'help')
         def helper(data, plugin, action):
@@ -373,7 +371,7 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
         else:
             self.plgnid = config['plgnid']
             self.cronconfig = config.get('cron', None)
-            print self.schedules.values()
+            logger.debug(self.schedules.values())
             for funcid, schfunc in self.schedules.items()[:]:
                 func = self.funcids[funcid]
                 try:

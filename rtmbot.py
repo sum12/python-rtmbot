@@ -11,6 +11,7 @@ import sys
 import time
 import logging
 from logging.handlers import RotatingFileHandler
+from logging import config as logconfig
 import watchdog
 import importlib
 from watchdog.events import FileSystemEventHandler
@@ -26,7 +27,8 @@ logger.propagate = False
 
 def setup_logger(cfg):
     if 'logconf' in cfg:
-        logging.fileConfig(cfg['logconf'])
+        with open(cfg['logconf'],'r') as f:
+            logconfig.dictConfig(json.load(f))
     elif 'LOGFILE' in cfg:
         file_handler = RotatingFileHandler(cfg['LOGFILE'], 'a', 1 * 1024 * 1024, 10)
         file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
@@ -139,14 +141,15 @@ class RtmBot(FileSystemEventHandler):
             try:
                 plg = Plugin(self, name, plgnid = len(self.bot_plugins)+1)  
             except Exception, e:
-                logging.exception('error loading plugin %s' % name)
+                logger.exception('error loading plugin %s' % name)
                 continue
             if not plg.disabled:
 #                vv("Plugin:"+plugin)
                 self.bot_plugins.append(plg)
                 plg.register_jobs()
+                vv('Plugind Enabled %s' % name)
             else:
-                vv('Plugind Disabled %s' % plugin)
+                vv('Plugind Disabled %s' % name)
         self.reload = False
 
 class Plugin(object):
@@ -193,14 +196,14 @@ class Plugin(object):
                     self.bot.pool.add_task(getattr(self.module, function_name), data)
                     #eval('self.module.'+function_name)(data)
                 except Exception, e:
-                    logging.exception('problem in module {} {}'.format(function_name, data))
+                    logger.exception('problem in module {} {}'.format(function_name, data))
             else:
                 self.bot.pool.add_task(getattr(self.module, function_name), data)
         if 'catch_all' in dir(self.module):
             try:
                 self.module.catch_all(data)
             except Exception, e:
-                logging.exception('problem in catch all')
+                logger.exception('problem in catch all')
 
     def do_jobs(self):
         for job in self.jobs:
@@ -257,7 +260,7 @@ def main_loop():
     except KeyboardInterrupt:
         sys.exit(0)
     except:
-        logging.exception('OOPS')
+        logger.exception('OOPS')
 
 
 def parse_args():
