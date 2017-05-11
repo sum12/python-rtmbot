@@ -5,9 +5,8 @@ import re,getpass,os,time,csv
 a= []
 
 from lib import Plugin, cron
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 plgn = Plugin('link')
+logger = plgn.logger
 
 @plgn.command('Url (?P<what>[-a-zA-Z0-9 `,;!@#$%^&*()_=.{}:"\?\<\>/\[\'\]\\n]+)')
 def experiment(data, what):

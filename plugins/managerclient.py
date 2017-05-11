@@ -3,9 +3,8 @@ from itertools import repeat
 
 from lib import Plugin, cron
 import logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 plgn = Plugin('managerclient')
+logger = plgn.logger
 
 
 
