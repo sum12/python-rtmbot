@@ -1,10 +1,8 @@
 import datetime as dt
 
-import logging
 from lib import *
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 plgn = Plugin('sleeper')
+logger = plgn.logger
 
 totalSleept = None
 startTime = None

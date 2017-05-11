@@ -1,5 +1,4 @@
 import time,requests
-import logging
 import re,getpass,os,time,csv
 
 a= []
@@ -36,7 +35,9 @@ def experiment(data, what):
 	
 	#filter to check if the link already exixsts in the database. 
 	if not search(data,what):
-		print a,what,description
+		logger.info(a)
+        logger.info(what)
+        logger.info(description)
 		data_write(a,what,description)
 		return "Noted to database"
 	else:
@@ -64,7 +65,7 @@ def search(data, what):
 		x = what.split(" ")
 		x = map(str,x)
 		define()
-		print x
+		logger.info(x)
 		if x[0]=='all' and len(x)==1:
 			while 1:
 				try:
@@ -86,7 +87,9 @@ def search(data, what):
 				except:
 					break
 				else:
-					print string , temp, final
+					logger.info(string )
+                    logger.info(temp)
+                    logger.info(final)
 					if string in temp:
 						final = final+temp
 		return final

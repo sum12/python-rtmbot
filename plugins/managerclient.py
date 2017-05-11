@@ -2,7 +2,6 @@ import requests
 from itertools import repeat
 
 from lib import Plugin, cron
-import logging
 plgn = Plugin('managerclient')
 logger = plgn.logger
 

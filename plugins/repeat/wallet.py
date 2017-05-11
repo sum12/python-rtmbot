@@ -1,12 +1,10 @@
 import time
-import logging
-amount = {}
 import re,getpass,os,time
+amount = {}
 
 from lib import Plugin, cron
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 plgn = Plugin('wallet')
+logger = plgn.logger
 
 def making_database():
 	f = open("wallet.txt",'w')
@@ -14,7 +12,7 @@ def making_database():
 	f.write(string)
 	f.write("\n")
 	f.close()
-	print "Database written"
+	logger.info("Database written")
 
 def reading_database():
 	global amount
@@ -22,14 +20,14 @@ def reading_database():
 	data = f.read()
 	f.close()
 	amount = eval(data)
-	print "Database_read"
+	logger.info("Database_read")
 
 def updating_database():
 	global amount
 	f=open("wallet.txt",'w')
 	f.write(str(amount))
 	f.close()
-	print "database_updated"
+	logger.info("database_updated")
 	
 def accountant(marker,amount,description=" "):
 	f = open('transaction.txt','a')
@@ -73,7 +71,7 @@ def transaction(data, what):
 	if z[0]=='savings' or z[0]=='saving':
 		marker = 'savings'
 	amount[marker]=amount[marker]+int(what)
-	print amount[marker]
+	logger.info(amount[marker])
 	updating_database()
 	if len(z )>=3:
 		x = " ".join(z[2:])
@@ -118,9 +116,10 @@ def statement(data,what):
 		marker = (what.split(" "))[0]
 		what = (what.split(" "))[1]
 		what = int(what)
-		print lines
+		logger.info(lines)
 		for l in lines:
-			print l, what
+			logger.info(l)
+            logger.info(what)
 			if marker in l and what>0:
 				final.append(l)
 				what=what-1
@@ -138,7 +137,7 @@ def pay(data,what):
 	what[1] = str(what[1])
 	what[2]=int(what[2])
 	if what[0]=='pay':
-		print amount
+		logger.info(amount)
 		if what[1] in (amount['pay']).keys():
 			(amount['pay'])[what[1]]=amount['pay'][what[1]]+what[2]
 		elif str(what[1]) in (amount['receive']).keys():
@@ -150,7 +149,7 @@ def pay(data,what):
 			else:
 				del (amount['receive'])[what[1]]
 		else:
-			print "HI"
+			logger.info("HI")
 			(amount['pay'])[str(what[1])]=what[2]
 	elif what[0]=='receive':
 		if str(what[1]) in (amount['receive']).keys():

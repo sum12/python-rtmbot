@@ -1,6 +1,5 @@
 import requests
 import time
-import logging
 from bs4 import BeautifulSoup
 from lib import Plugin, cron
 

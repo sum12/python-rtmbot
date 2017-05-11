@@ -1,13 +1,11 @@
 
 import time
-import logging
 amount = {}
 import time,re,getpass,os,csv
 
 from lib import Plugin, cron
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 plgn = Plugin('daily_notes')
+logger = plgn.logger
 
 fieldnames = ['Date','Seperator','Todo','Type']
 

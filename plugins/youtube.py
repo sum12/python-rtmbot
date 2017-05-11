@@ -206,7 +206,7 @@ def show(data,what=None):
     temp = links.split(",")[:-1]
     final = []
     data = [str(j) for j in temp if j!='' or j!=' ' or j!='\n']
-    print data
+    logger.debug(data)
     if len(temp)==1 and temp[0]=='':
         return "Please initiate a queue. Either your queue is empty or uninitialized !"
     else:

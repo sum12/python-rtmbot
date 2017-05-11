@@ -1,9 +1,9 @@
 import os
 import pickle
 from lib import Plugin
-import logging
-logger = logging.getLogger(__name__)
 plgn = Plugin('todo')
+logger = plgn.logger
+
 
 tasks = {}
 
@@ -39,5 +39,5 @@ def todo(data, **args):
             tasks[channel].pop(num)
             return 'OK'
         if text == "show":
-            print tasks
+            logger.info(tasks)
         pickle.dump(tasks, open(FILE,"wb"))

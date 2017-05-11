@@ -2,10 +2,8 @@ import time
 import re
 
 from lib import Plugin, cron
-import logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 plgn = Plugin('repeat')
+logger = plgn.logger
 plgn.__doc__ = "Demo/Dummy plugin"
 
 

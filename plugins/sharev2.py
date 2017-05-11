@@ -2,12 +2,10 @@ import os
 import json
 from datetime import datetime
 from csv import DictReader, DictWriter
-import logging
 
 from lib import Plugin, cron
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 plgn = Plugin('share')
+logger = plgn.logger
     
 all = ['soumavo','bos','sumit']
 

@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-import logging
 from csv import DictWriter, DictReader
 from lib import Plugin, cron
 from collections import defaultdict
