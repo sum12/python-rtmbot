@@ -326,6 +326,9 @@ class Plugin(object):
         self.maxcount = {}
         self.schedules = {}
         self.funcids = {}
+        self.logger = logging.getLogger('rtmbot.'+name)
+        self.debug = self.logger.debug
+        self.info = self.logger.info
 
         @self.command('help( (?P<plugin>\w+)( (?P<action>\w+))?)?', help = 'help')
         def helper(data, plugin, action):
@@ -443,3 +446,4 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
             self.crontable.append([limittomax(), context])
             return func
         return wrapper
+

@@ -7,9 +7,8 @@ from collections import defaultdict
 
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 plgn = Plugin('reimburse')
+logger = plgn.logger
 plgn.__doc__ = "Use this plugin to store reimbursements. The details will be mailed to you by the end of month"
 
 
