@@ -374,12 +374,15 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
             logger.debug(self.schedules.values())
             for funcid, schfunc in self.schedules.items()[:]:
                 func = self.funcids[funcid]
+                self.schedules.pop(funcid)
                 try:
-                    self.schedules[funcid] = schfunc or cronfromstring(self.cronconfig[func.__name__])
+                    schfunc = schfunc or cronfromstring(self.cronconfig[func.__name__])
                 except KeyError:
                     logger.error('%s from %s has no cron, cron will not be scheduled' % (func.__name__, self.name))
                 except Exception as e:
                     logger.exception('unable to create an schedule for %s' % func.__name__)
+                else:
+                    self.schedules[funcid] = schfunc
             
 
     def setupmethod(self, func):
