@@ -370,7 +370,7 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
             self.cronconfig = {}
         else:
             self.plgnid = config['plgnid']
-            self.cronconfig = config.get('cron', None)
+            self.cronconfig = config.get('cron', {})
             logger.debug(self.schedules.values())
             for funcid, schfunc in self.schedules.items()[:]:
                 func = self.funcids[funcid]
