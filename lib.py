@@ -379,10 +379,11 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                     schfunc = schfunc or cronfromstring(self.cronconfig[func.__name__])
                 except KeyError:
                     logger.error('%s from %s has no cron, cron will not be scheduled' % (func.__name__, self.name))
+                    schfunc = []
                 except Exception as e:
                     logger.exception('unable to create an schedule for %s' % func.__name__)
-                else:
-                    self.schedules[funcid] = schfunc
+                    schfunc = []
+                self.schedules[funcid] = schfunc
             
 
     def setupmethod(self, func):
