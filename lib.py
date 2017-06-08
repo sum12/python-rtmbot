@@ -444,8 +444,7 @@ usage: help   "plgin-name or plgn-number"    "command-name or command-number"
                 postdone()
                 if self.maxcount[id(func)] != None:
                     self.maxcount[id(func)] += 1
-            if schfunc:
-                self.crontable.append([limittomax(), context])
+            self.crontable.append([limittomax(), context])
             return func
         return wrapper
 
