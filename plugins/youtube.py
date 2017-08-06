@@ -59,7 +59,11 @@ def downloader_hook(d):
         if os.path.exists(temp_name):
             downloaded_list.append('unable to rename %s' % temp_name)
 
-
+# aki -> maintain the order.
+#        if you want to skip someoptions replace it with .(dot)
+#        having it this way element of a can later be a list of option
+#        to furthur customize that option. like 'a' for audio can be 
+#        later replaced by set of keys for audiotopions.
 def makeoptions(*a):
     args = [None]+[str(i) for i in a]
     y = {
@@ -123,13 +127,22 @@ def queue(data,what,param):
     return '{0} added to download queue'.format(str(what))
 
 
+@plgn.command('savevideo <(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?.*?(?:list)=(?P<playid>.*?)>')
+def saveplayvideo(data, playid):
+    """ save playlist for recurring download, but download only video"""
+    return saveplaylist(data, ','.join([playid, '..i']))
+
 @plgn.command('save <(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?.*?(?:list)=(?P<playid>.*?)>')
 def saveplaylist(data, playid):
-    """ save playlist for recurring download"""
-    if playid in  [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i != None]:
-        return 'playid {0} exists'.format(playid)
-    open(plgn.playlistsfile,'a').write('\n{0}'.format(playid))
-    return 'Saved playid {0}'.format(playid)
+    """ save playlist for recurring download, and extract audio from best quality"""
+    existingplayids = [i for i in open(plgn.playlistsfile,'r').read().split('\n') if i != None]
+    idwithoptions = playid
+    if len(idwithoptions.split(',')) < 2:
+        idwithoptions = ','.join([playid, 'aki'])
+    if playid in existingplayids or (playid != idwithoptions and idwithoptions in existingplayids):
+        return 'playid {0} exists'.format(idwithoptions)
+    open(plgn.playlistsfile,'a').write('\n{0}'.format(idwithoptions))
+    return 'Saved playid {0}'.format(idwithoptions)
 
 @plgn.schedule(maximum=1)
 @plgn.command('startplaylist')
@@ -143,7 +156,14 @@ def continueplaylist(*args, **kwargs):
     for i in  playids:
         try:
             logger.info('starting for id->' + i)
-            link_downloader(i, makeoptions(*'aki'))
+            # existing playids will not have , at their end. So assuming
+            # aki option for them.
+            try:
+                url,options = i.split(',')
+            except:
+                url = i
+                options = 'aki'
+            link_downloader(url, makeoptions(*options)) 
         except:
             pass
         finally:
